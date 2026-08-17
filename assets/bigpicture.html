@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Attack Big Picture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #020b16;
+    --accent: #00c8ff;
+    --accent2: #ff3c6e;
+    --glow: 0 0 20px rgba(0,200,255,0.5);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    font-family: 'Exo 2', sans-serif;
+    color: #c8e8ff;
+    overflow: hidden;
+    height: 100vh; width: 100vw;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+    pointer-events:none; z-index:9999;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background-image: linear-gradient(rgba(0,200,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px; pointer-events:none; z-index:0;
+  }
+  #canvas-wrapper { position:fixed; inset:0; z-index:1; }
+  canvas { display:block; }
+
+  #header {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    padding: 18px 32px;
+    display:flex; align-items:center; gap:14px;
+    background: linear-gradient(180deg, rgba(0,8,20,0.97) 0%, transparent 100%);
+  }
+  .logo-icon {
+    width:44px; height:44px;
+    border: 2px solid var(--accent); border-radius:6px;
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+  @keyframes pulse-border {
+    0%,100% { box-shadow: 0 0 10px rgba(0,200,255,0.4); }
+    50%      { box-shadow: 0 0 30px rgba(0,200,255,0.9); }
+  }
+  h1 {
+    font-family:'Orbitron', monospace; font-size:clamp(13px,2vw,22px); font-weight:900;
+    letter-spacing:4px; text-transform:uppercase; color: var(--accent);
+    text-shadow: 0 0 20px rgba(0,200,255,0.7);
+  }
+  .subtitle { font-family:'Share Tech Mono', monospace; font-size:10px; color: rgba(0,200,255,0.5); letter-spacing:3px; }
+
+  #teams {
+    position:fixed; top:90px; left:20px; z-index:100;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .team-badge {
+    display:flex; align-items:center; gap:8px;
+    background: rgba(0,15,35,0.82); border: 1px solid rgba(0,200,255,0.18);
+    border-radius:4px; padding: 5px 10px;
+    font-family:'Share Tech Mono', monospace; font-size:10px;
+    backdrop-filter: blur(6px); transition: all 0.2s;
+  }
+  .team-badge:hover { border-color: var(--accent); box-shadow: var(--glow); }
+  .team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  #counter {
+    position:fixed; top:90px; right:20px; z-index:100; text-align:right;
+  }
+  .count-box {
+    background: rgba(0,15,35,0.85); border: 1px solid rgba(0,200,255,0.25);
+    border-radius:6px; padding:12px 18px; backdrop-filter:blur(8px);
+  }
+  .count-num {
+    font-family:'Orbitron', monospace; font-size:42px; font-weight:900;
+    color: var(--accent); text-shadow: 0 0 30px rgba(0,200,255,0.8); line-height:1;
+  }
+  .count-label { font-family:'Share Tech Mono', monospace; font-size:9px; letter-spacing:2px; color: rgba(0,200,255,0.5); margin-top:3px; }
+
+  #detail-panel {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    z-index:200; width:min(580px, 92vw);
+    background: rgba(0,10,25,0.96); border: 1px solid var(--accent);
+    border-radius:10px; padding:20px 24px; backdrop-filter: blur(18px);
+    box-shadow: 0 0 50px rgba(0,200,255,0.2), inset 0 0 40px rgba(0,200,255,0.03);
+    display:none; animation: slide-up 0.3s ease;
+  }
+  @keyframes slide-up {
+    from { transform: translateX(-50%) translateY(20px); opacity:0; }
+    to   { transform: translateX(-50%) translateY(0);    opacity:1; }
+  }
+  #detail-panel.visible { display:block; }
+  .panel-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; gap:10px; }
+  .panel-title { font-family:'Orbitron', monospace; font-size:15px; font-weight:700; color: var(--accent); text-shadow: 0 0 10px rgba(0,200,255,0.5); }
+  .panel-team { font-family:'Share Tech Mono', monospace; font-size:10px; padding:3px 9px; border-radius:20px; border:1px solid; white-space:nowrap; flex-shrink:0; }
+  .panel-close { background:none; border:none; color:rgba(0,200,255,0.5); font-size:18px; cursor:pointer; padding:0 0 0 8px; transition: color 0.2s; }
+  .panel-close:hover { color: var(--accent2); }
+  .panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .panel-field { background: rgba(0,30,60,0.5); border-radius:5px; padding:8px 10px; border-left:2px solid; }
+  .field-label { font-family:'Share Tech Mono', monospace; font-size:8px; letter-spacing:2px; color: rgba(0,200,255,0.45); text-transform:uppercase; margin-bottom:3px; }
+  .field-val { font-size:12px; font-weight:600; color: #e0f4ff; }
+  .panel-desc { font-size:12px; line-height:1.65; color: rgba(200,232,255,0.8); border-top:1px solid rgba(0,200,255,0.12); padding-top:10px; }
+
+  #hint {
+    position:fixed; bottom:20px; right:20px; z-index:100;
+    font-family:'Share Tech Mono', monospace; font-size:9px;
+    color:rgba(0,200,255,0.3); text-align:right; line-height:2;
+  }
+</style>
+</head>
+<body>
+<div id="canvas-wrapper"><canvas id="globe"></canvas></div>
+
+<header id="header">
+  <div class="logo-icon">🌐</div>
+  <div>
+    <h1>Cyber Attack Big Picture</h1>
+    <div class="subtitle">Network &amp; Cyber Attack Taxonomy — Diplomarbeit</div>
+  </div>
+</header>
+
+<div id="teams">
+  <div class="team-badge"><div class="team-dot" style="background:#ff6b35"></div><span>Kobayashi-Maru</span></div>
+  <div class="team-badge"><div class="team-dot" style="background:#a855f7"></div><span>BBB</span></div>
+  <div class="team-badge"><div class="team-dot" style="background:#22d3ee"></div><span>Zerosec</span></div>
+  <div class="team-badge"><div class="team-dot" style="background:#39ff14"></div><span>Matryoshka</span></div>
+  <div class="team-badge"><div class="team-dot" style="background:#f59e0b"></div><span>Beispiele</span></div>
+</div>
+
+<div id="counter">
+  <div class="count-box">
+    <div class="count-num">15</div>
+    <div class="count-label">ATTACK SCENARIOS</div>
+  </div>
+</div>
+
+<div id="detail-panel">
+  <div class="panel-header">
+    <div><div class="panel-title" id="p-title">—</div></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="panel-team" id="p-team">—</div>
+      <button class="panel-close" onclick="closePanel()">✕</button>
+    </div>
+  </div>
+  <div class="panel-grid">
+    <div class="panel-field" id="pf-layer"><div class="field-label">OSI Layer</div><div class="field-val" id="p-layer">—</div></div>
+    <div class="panel-field" id="pf-cat"><div class="field-label">Kategorie</div><div class="field-val" id="p-cat">—</div></div>
+    <div class="panel-field" id="pf-sev"><div class="field-label">Schweregrad</div><div class="field-val" id="p-sev">—</div></div>
+    <div class="panel-field" id="pf-proto"><div class="field-label">Protokoll</div><div class="field-val" id="p-proto">—</div></div>
+  </div>
+  <div class="panel-desc" id="p-desc">—</div>
+</div>
+
+<div id="hint">KLICK → Details<br>DRAG → Drehen<br>SCROLL → Zoom</div>
+
+<script>
+const TEAMS = {
+  'Kobayashi-Maru': { color:'#ff6b35', glow:'rgba(255,107,53,0.7)' },
+  'BBB':            { color:'#a855f7', glow:'rgba(168,85,247,0.7)' },
+  'Zerosec':        { color:'#22d3ee', glow:'rgba(34,211,238,0.7)' },
+  'Matryoshka':     { color:'#39ff14', glow:'rgba(57,255,20,0.7)'  },
+  'Beispiele':      { color:'#f59e0b', glow:'rgba(245,158,11,0.7)' },
+};
+
+// Shape per category for node icons
+const SHAPES = {
+  'Routing Attack':          'diamond',
+  'Code Injection':          'hexagon',
+  'KI-gestützte Täuschung':  'triangle',
+  'Spyware / Malware':       'square',
+  'Social Engineering':      'triangle',
+  'Network Manipulation':    'diamond',
+  'VoIP Attack':             'hexagon',
+  'WLAN Attack':             'square',
+  'Kryptografischer Angriff':'diamond',
+  'DoS/DDoS':                'triangle',
+  'Web Attack':              'hexagon',
+  'Exploitation':            'square',
+  'Privilege Escalation':    'diamond',
+};
+
+const ATTACKS = [
+  // ── Diplomarbeit ────────────────────────────────────────────────────────
+  { id:0,  name:'BGP Hijacking',         team:'Kobayashi-Maru',
+    layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🔴 KRITISCH', proto:'BGP',
+    desc:'Manipulation von BGP-Routing-Tabellen, um Netzwerkverkehr umzuleiten oder abzufangen. Angreifer kündigen fremde IP-Präfixe an und übernehmen so den Datenfluss ganzer Netzwerksegmente.',
+    lat:52, lon:13 },
+  { id:1,  name:'API Hooking',           team:'BBB',
+    layer:'Layer 7 – Application', cat:'Code Injection', sev:'🟠 HOCH', proto:'Win32 API',
+    desc:'Abfangen und Umleiten von API-Aufrufen im Betriebssystem. Durch IAT-Patching oder Inline-Hooks werden Systemfunktionen manipuliert, um Daten zu extrahieren oder Prozesse zu kontrollieren.',
+    lat:48, lon:2 },
+  { id:2,  name:'Deepfakes',             team:'BBB',
+    layer:'Social Engineering', cat:'KI-gestützte Täuschung', sev:'🟠 HOCH', proto:'ML/AI',
+    desc:'Einsatz von KI-generierten synthetischen Medien zur Identitätstäuschung. Deepfakes ermöglichen Vishing, CEO-Fraud und gezielte Desinformationskampagnen.',
+    lat:40, lon:-74 },
+  { id:3,  name:'Keylogger',             team:'Zerosec',
+    layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🟠 HOCH', proto:'OS-Kernel',
+    desc:'Software- oder Hardware-basierte Aufzeichnung von Tastatureingaben. Keylogger operieren häufig auf Kernel-Ebene und exfiltrieren Passwörter und vertrauliche Informationen.',
+    lat:55, lon:37 },
+  { id:4,  name:'RIP Spoofing',          team:'Zerosec',
+    layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🟡 MITTEL', proto:'RIPv1/v2',
+    desc:'Einspeisung gefälschter RIP-Updates in ein Netzwerk, um Routing-Tabellen zu verfälschen. Ermöglicht Man-in-the-Middle-Angriffe und Denial-of-Service.',
+    lat:35, lon:139 },
+  { id:5,  name:'Scareware',             team:'Matryoshka',
+    layer:'Layer 7 – Application', cat:'Social Engineering', sev:'🟡 MITTEL', proto:'HTTP/Browser',
+    desc:'Täuschende Sicherheitswarnungen verleiten Nutzer zur Installation von Malware. Manipulation durch Angst und künstliche Dringlichkeit.',
+    lat:19, lon:-99 },
+  { id:6,  name:'STP Root Bridge',       team:'Matryoshka',
+    layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'STP / 802.1D',
+    desc:'Gefälschte BPDU-Pakete mit niedriger Bridge-ID übernehmen die Root-Bridge-Rolle. Ermöglicht vollständiges Mitsniffen des Ethernet-Traffics im LAN-Segment.',
+    lat:-34, lon:151 },
+  { id:7,  name:'SIP Reg. Hijacking',    team:'Matryoshka',
+    layer:'Layer 5–7', cat:'VoIP Attack', sev:'🔴 KRITISCH', proto:'SIP / UDP',
+    desc:'Übernahme einer SIP-Registrierung durch Replay- oder Brute-Force-Angriffe. Ermöglicht unautorisierte VoIP-Nutzung, Gesprächsabhoraktion und Gebührenbetrug.',
+    lat:1, lon:103 },
+  { id:8,  name:'Evil Twin Attack',      team:'Matryoshka',
+    layer:'Layer 1–2', cat:'WLAN Attack', sev:'🔴 KRITISCH', proto:'IEEE 802.11',
+    desc:'Bösartiger Access Point mit identischer SSID wie ein legitimes Netzwerk. Clients verbinden sich automatisch und der gesamte Datenverkehr wird über den Angreifer geleitet.',
+    lat:-23, lon:-46 },
+  { id:9,  name:'Padding-Oracle AES-CBC',team:'Matryoshka',
+    layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🔴 KRITISCH', proto:'AES-CBC',
+    desc:'Ausnutzung von Padding-Validierungsfehlern in CBC-verschlüsselten Nachrichten. Der Klartext kann Byte-für-Byte durch wiederholtes Senden manipulierter Blöcke entschlüsselt werden.',
+    lat:48, lon:16 },
+  // ── Beispiele ────────────────────────────────────────────────────────────
+  { id:10, name:'SQL Injection',         team:'Beispiele',
+    layer:'Layer 7 – Application', cat:'Web Attack', sev:'🔴 KRITISCH', proto:'HTTP/SQL',
+    desc:'Einschleusen von SQL-Code in Datenbankabfragen über unzureichend validierte Eingabefelder. Ermöglicht Datenbankzugriff, Datenexfiltration und vollständige Systemkompromittierung.',
+    lat:37, lon:-122 },
+  { id:11, name:'DDoS – Amplification',  team:'Beispiele',
+    layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🔴 KRITISCH', proto:'UDP/DNS',
+    desc:'Missbrauch von Reflection-Diensten (DNS, NTP, SSDP) zur Verstärkung von Angriffstraffic. Faktor bis zu 10.000× Amplification führt zu Bandbreitenüberflutung beim Ziel.',
+    lat:22, lon:114 },
+  { id:12, name:'Pass-the-Hash',         team:'Beispiele',
+    layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟠 HOCH', proto:'NTLM / SMB',
+    desc:'Nutzung eines erbeuteten NTLM-Passwort-Hashes zur Authentifizierung ohne Kenntnis des Klartextpassworts. Weit verbreitet in lateralen Bewegungen in Active-Directory-Umgebungen.',
+    lat:51, lon:-0.1 },
+  { id:13, name:'ARP Spoofing',          team:'Beispiele',
+    layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'ARP',
+    desc:'Versenden gefälschter ARP-Antworten, um die ARP-Tabellen im LAN zu vergiften. Leitet Traffic auf den Angreifer um und ermöglicht Man-in-the-Middle sowie Session-Hijacking.',
+    lat:28, lon:77 },
+  { id:14, name:'Privilege Escalation',  team:'Beispiele',
+    layer:'Layer 7 / OS', cat:'Privilege Escalation', sev:'🔴 KRITISCH', proto:'OS / Kernel',
+    desc:'Ausnutzung von Schwachstellen oder Fehlkonfigurationen, um von niedrigen Benutzerrechten auf Systemrechte zu eskalieren. Typischer Schritt nach erstem Zugriff in der Kill Chain.',
+    lat:-26, lon:28 },
+];
+
+// ─── CANVAS SETUP ─────────────────────────────────────────────────────────
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+let W,H,cx,cy,R;
+let rotX=0.3, rotY=0;
+let zoom=1;
+let dragging=false, lastMX, lastMY, dragMoved=false;
+let hoveredNode=null;
+let animFrame=0;
+let autoRotate=true;
+
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; cx=W/2; cy=H/2; R=Math.min(W,H)*0.28; }
+resize(); window.addEventListener('resize',resize);
+
+function latLonTo3D(lat,lon){
+  const phi=(90-lat)*Math.PI/180, theta=(lon+180)*Math.PI/180;
+  return { x:-Math.sin(phi)*Math.cos(theta), y:Math.cos(phi), z:Math.sin(phi)*Math.sin(theta) };
+}
+function rotate3D(p){
+  let x=p.x*Math.cos(rotY)+p.z*Math.sin(rotY), z=-p.x*Math.sin(rotY)+p.z*Math.cos(rotY), y=p.y;
+  let y2=y*Math.cos(rotX)-z*Math.sin(rotX), z2=y*Math.sin(rotX)+z*Math.cos(rotX);
+  return {x,y:y2,z:z2};
+}
+function project(p3){ const r=R*zoom; return {sx:cx+p3.x*r, sy:cy-p3.y*r, z:p3.z}; }
+
+const GRID_LATS=[], GRID_LONS=[];
+for(let l=-80;l<=80;l+=20) GRID_LATS.push(l);
+for(let l=-180;l<180;l+=20) GRID_LONS.push(l);
+
+// ── Continent outlines (simplified polygons) ────────────────────────────
+// [lat, lon] pairs, null = pen up
+const CONTINENTS = [
+  // Europe
+  [[71,28],[70,18],[68,14],[65,14],[63,5],[58,5],[58,8],[55,8],[55,10],[54,10],[54,12],[56,10],[58,11],[60,5],[62,5],[63,10],[65,14],[70,25],[71,28]],
+  [[48,17],[50,14],[51,14],[52,20],[53,24],[54,24],[56,21],[57,22],[58,25],[59,28],[60,30],[59,28],[57,22],[55,18],[55,14],[54,10],[54,8],[55,8],[57,8],[59,5],[60,5],[58,11],[56,10],[54,12],[54,10],[53,8],[52,8],[51,4],[51,3],[50,3],[48,0],[46,2],[44,8],[44,10],[46,12],[46,14],[47,18],[48,17]],
+  // Scandinavia
+  [[57,8],[58,5],[60,5],[62,5],[63,10],[65,14],[68,14],[70,18],[71,28],[69,28],[65,25],[63,20],[61,20],[60,25],[58,25],[57,22],[55,18],[55,14],[54,10],[54,12],[56,10],[57,8]],
+  // Africa
+  [[-34,18],[-28,32],[-18,36],[-10,40],[0,42],[10,45],[12,44],[12,42],[15,40],[20,38],[22,38],[26,35],[30,32],[32,32],[34,28],[35,24],[37,15],[37,10],[34,10],[30,10],[20,14],[14,16],[10,16],[6,2],[4,2],[4,8],[0,10],[-5,12],[-10,14],[-18,12],[-28,16],[-34,18]],
+  // North America
+  [[72,-140],[70,-130],[68,-130],[66,-120],[60,-140],[55,-130],[50,-125],[48,-122],[46,-122],[44,-120],[40,-124],[36,-122],[32,-117],[28,-112],[24,-110],[20,-104],[18,-96],[16,-90],[18,-88],[20,-87],[22,-85],[24,-82],[26,-80],[30,-80],[32,-80],[36,-76],[38,-75],[40,-74],[42,-70],[44,-68],[46,-65],[47,-54],[52,-56],[54,-58],[56,-60],[58,-64],[60,-64],[62,-68],[64,-66],[66,-62],[68,-60],[70,-58],[72,-60],[76,-70],[78,-72],[80,-76],[82,-82],[84,-80],[70,-80],[66,-80],[66,-70],[64,-72],[62,-76],[60,-76],[58,-80],[56,-80],[54,-80],[52,-82],[50,-80],[50,-90],[52,-96],[54,-100],[56,-108],[58,-110],[60,-120],[62,-130],[64,-134],[66,-138],[68,-140],[70,-140],[72,-140]],
+  // South America
+  [[10,-62],[8,-60],[8,-63],[6,-65],[4,-68],[0,-70],[-5,-78],[-10,-78],[-15,-75],[-20,-70],[-24,-70],[-28,-70],[-34,-72],[-40,-64],[-44,-66],[-52,-68],[-54,-64],[-56,-66],[-54,-66],[-52,-58],[-50,-52],[-44,-48],[-38,-44],[-28,-48],[-20,-40],[-14,-38],[-8,-34],[-4,-36],[0,-48],[4,-50],[8,-60],[10,-62]],
+  // Asia (simplified)
+  [[72,130],[70,140],[68,140],[66,140],[64,144],[60,140],[56,140],[52,142],[50,140],[46,142],[44,136],[42,130],[40,126],[38,122],[36,120],[32,122],[28,120],[24,118],[20,110],[14,108],[10,108],[6,104],[2,104],[0,104],[-8,116],[0,110],[10,100],[14,100],[16,96],[18,94],[22,92],[26,90],[28,88],[28,84],[28,80],[28,72],[26,66],[24,62],[20,58],[16,54],[14,50],[14,46],[18,42],[22,38],[26,35],[30,32],[32,32],[34,36],[36,36],[38,38],[40,42],[42,48],[44,50],[46,52],[48,58],[50,58],[52,56],[54,52],[56,48],[58,50],[60,60],[62,68],[64,72],[66,68],[68,66],[68,58],[66,52],[64,46],[62,40],[60,38],[60,42],[62,48],[64,54],[66,62],[68,68],[70,72],[72,76],[72,80],[70,80],[68,76],[66,76],[64,80],[62,80],[60,76],[58,76],[56,80],[56,84],[58,90],[60,98],[62,108],[64,118],[66,126],[68,132],[70,136],[72,130]],
+  // Australia
+  [[-14,132],[-18,122],[-22,114],[-28,114],[-32,116],[-34,118],[-38,140],[-38,148],[-36,150],[-34,151],[-28,154],[-22,150],[-16,146],[-14,136],[-14,132]],
+];
+
+function drawGlobe(){
+  const r=R*zoom;
+
+  // Deep space background glow around globe
+  const spaceglow = ctx.createRadialGradient(cx,cy,r*0.6, cx,cy,r*2.2);
+  spaceglow.addColorStop(0,'rgba(0,40,80,0.0)');
+  spaceglow.addColorStop(0.5,'rgba(0,20,50,0.12)');
+  spaceglow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=spaceglow; ctx.beginPath(); ctx.arc(cx,cy,r*2.2,0,Math.PI*2); ctx.fill();
+
+  // Atmosphere
+  const atm=ctx.createRadialGradient(cx,cy,r*0.88, cx,cy,r*1.28);
+  atm.addColorStop(0,'rgba(0,100,200,0.22)');
+  atm.addColorStop(0.5,'rgba(0,60,140,0.09)');
+  atm.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=atm; ctx.beginPath(); ctx.arc(cx,cy,r*1.28,0,Math.PI*2); ctx.fill();
+
+  // Ocean – rich deep blue with pole variation
+  const ocean=ctx.createRadialGradient(cx-r*0.25,cy-r*0.25,0, cx,cy,r);
+  ocean.addColorStop(0,'#0d3a6e');
+  ocean.addColorStop(0.5,'#082040');
+  ocean.addColorStop(1,'#030f22');
+  ctx.fillStyle=ocean; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
+  // Subtle ocean shimmer
+  const shimmer=ctx.createRadialGradient(cx-r*0.4,cy-r*0.4,0, cx,cy,r*0.8);
+  shimmer.addColorStop(0,'rgba(0,160,255,0.10)');
+  shimmer.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=shimmer; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
+  // Clip to globe for grid & continents
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.clip();
+
+  // Grid lines
+  ctx.lineWidth=0.5;
+  for(const lat of GRID_LATS){
+    ctx.beginPath(); let first=true;
+    for(let lon=-180;lon<=180;lon+=3){
+      const {sx,sy,z}=project(rotate3D(latLonTo3D(lat,lon)));
+      if(z<-0.05){first=true;continue;}
+      first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
+    }
+    ctx.strokeStyle=lat===0?'rgba(0,200,255,0.22)':'rgba(0,200,255,0.07)'; ctx.stroke();
+  }
+  for(const lon of GRID_LONS){
+    ctx.beginPath(); let first=true;
+    for(let lat=-90;lat<=90;lat+=3){
+      const {sx,sy,z}=project(rotate3D(latLonTo3D(lat,lon)));
+      if(z<-0.05){first=true;continue;}
+      first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
+    }
+    ctx.strokeStyle=lon===0?'rgba(0,200,255,0.18)':'rgba(0,200,255,0.06)'; ctx.stroke();
+  }
+
+  // Continents – filled polygons
+  for(const poly of CONTINENTS){
+    // Calculate visibility: draw only front-facing points
+    ctx.beginPath();
+    let penDown=false;
+    for(const pt of poly){
+      if(pt===null){penDown=false;continue;}
+      const p3=rotate3D(latLonTo3D(pt[0],pt[1]));
+      const {sx,sy,z}=project(p3);
+      if(z<0.02){penDown=false;continue;}
+      penDown?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy);
+      penDown=true;
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba(30,100,60,0.55)';
+    ctx.fill();
+    ctx.strokeStyle='rgba(60,180,90,0.35)';
+    ctx.lineWidth=0.8;
+    ctx.stroke();
+  }
+
+  // Polar ice caps
+  for(const poleLat of [75,-75]){
+    ctx.beginPath(); let first=true;
+    for(let lon=-180;lon<=180;lon+=5){
+      const p3=rotate3D(latLonTo3D(poleLat,lon));
+      const {sx,sy,z}=project(p3);
+      if(z<0){first=true;continue;}
+      first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
+    }
+    ctx.closePath();
+    ctx.fillStyle='rgba(180,220,255,0.18)';
+    ctx.fill();
+  }
+
+  // Specular highlight
+  const spec=ctx.createRadialGradient(cx-r*0.35,cy-r*0.38,0, cx-r*0.2,cy-r*0.2,r*0.7);
+  spec.addColorStop(0,'rgba(180,230,255,0.16)');
+  spec.addColorStop(0.4,'rgba(100,180,255,0.05)');
+  spec.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=spec; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // Outer rim glow
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  const rimGrad=ctx.createLinearGradient(cx-r,cy,cx+r,cy);
+  rimGrad.addColorStop(0,'rgba(0,160,255,0.5)');
+  rimGrad.addColorStop(0.5,'rgba(0,220,255,0.2)');
+  rimGrad.addColorStop(1,'rgba(0,120,200,0.5)');
+  ctx.strokeStyle=rimGrad; ctx.lineWidth=2; ctx.stroke();
+}
+
+// ── Node drawing helpers ─────────────────────────────────────────────────
+function drawShape(type, x, y, r, ctx){
+  ctx.beginPath();
+  switch(type){
+    case 'diamond':
+      ctx.moveTo(x, y-r); ctx.lineTo(x+r*0.75, y); ctx.lineTo(x, y+r); ctx.lineTo(x-r*0.75, y); ctx.closePath(); break;
+    case 'hexagon':
+      for(let i=0;i<6;i++){ const a=i*Math.PI/3-Math.PI/6; ctx.lineTo(x+Math.cos(a)*r, y+Math.sin(a)*r); } ctx.closePath(); break;
+    case 'triangle':
+      ctx.moveTo(x, y-r); ctx.lineTo(x+r*0.87, y+r*0.5); ctx.lineTo(x-r*0.87, y+r*0.5); ctx.closePath(); break;
+    case 'square':
+      ctx.rect(x-r*0.78,y-r*0.78,r*1.56,r*1.56); break;
+    default:
+      ctx.arc(x,y,r,0,Math.PI*2);
+  }
+}
+
+function drawNodes(){
+  const nodes2d=[];
+  for(const atk of ATTACKS){
+    const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
+    const {sx,sy,z}=project(p3);
+    const visible=z>-0.05;
+    const alpha=visible?Math.max(0.15,(z+0.05)/1.05):0;
+    nodes2d.push({atk,sx,sy,z,visible,alpha});
+  }
+  nodes2d.sort((a,b)=>a.z-b.z);
+
+  // Team connection lines
+  const teamMap={};
+  for(const n of nodes2d){ const t=n.atk.team; if(!teamMap[t])teamMap[t]=[]; teamMap[t].push(n); }
+  for(const [team,nodes] of Object.entries(teamMap)){
+    const col=TEAMS[team].color;
+    for(let i=0;i<nodes.length-1;i++){
+      const a=nodes[i],b=nodes[i+1];
+      if(!a.visible||!b.visible) continue;
+      ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy);
+      ctx.strokeStyle=col+'28'; ctx.lineWidth=1; ctx.setLineDash([4,7]); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+
+  for(const nd of nodes2d){
+    if(!nd.visible||nd.alpha<0.05) continue;
+    const {atk,sx,sy,alpha}=nd;
+    const col=TEAMS[atk.team].color;
+    const glow=TEAMS[atk.team].glow;
+    const isHov=hoveredNode===atk.id;
+    const baseR=isHov?20:14;
+    const pulse=Math.sin(animFrame*0.05+atk.id*1.1)*2.5;
+    const shape=SHAPES[atk.cat]||'diamond';
+
+    ctx.globalAlpha=alpha;
+
+    // Outer pulse ring
+    const ringR=(baseR+pulse+14)*zoom;
+    const g=ctx.createRadialGradient(sx,sy,0,sx,sy,ringR);
+    g.addColorStop(0,glow); g.addColorStop(0.5,glow.replace('0.7','0.2')); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,ringR,0,Math.PI*2); ctx.fill();
+
+    // Animated outer ring stroke
+    ctx.save();
+    ctx.strokeStyle=col+(isHov?'cc':'66');
+    ctx.lineWidth=(isHov?2.5:1.5)*zoom;
+    drawShape(shape,sx,sy,(baseR+6)*zoom,ctx);
+    ctx.stroke(); ctx.restore();
+
+    // Main node fill
+    ctx.save();
+    const fillGrad=ctx.createRadialGradient(sx-baseR*0.3*zoom,sy-baseR*0.3*zoom,0,sx,sy,baseR*zoom);
+    fillGrad.addColorStop(0,isHov?'#ffffff':col+'ff');
+    fillGrad.addColorStop(1,isHov?col+'bb':col+'99');
+    ctx.fillStyle=fillGrad;
+    drawShape(shape,sx,sy,baseR*zoom,ctx);
+    ctx.fill();
+    ctx.strokeStyle=isHov?'#fff':col+'aa';
+    ctx.lineWidth=isHov?2.5:1.5;
+    ctx.stroke(); ctx.restore();
+
+    // Inner icon emoji
+    ctx.save();
+    ctx.font=`${Math.round((baseR*0.9)*zoom)}px serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha=alpha*(isHov?1:0.9);
+    ctx.fillStyle=isHov?col:'#fff';
+    ctx.fillText(getCatEmoji(atk.cat),sx,sy+1);
+    ctx.restore();
+
+    // Label
+    if(alpha>0.35||isHov){
+      ctx.save();
+      ctx.font=`${isHov?'bold ':''} ${Math.round(11*zoom)}px 'Exo 2', sans-serif`;
+      ctx.fillStyle=col;
+      ctx.textAlign='center';
+      ctx.shadowColor=col; ctx.shadowBlur=isHov?18:8;
+      ctx.fillText(atk.name, sx, sy-(baseR+12)*zoom);
+      ctx.shadowBlur=0;
+      if(isHov){
+        ctx.font=`${Math.round(9*zoom)}px 'Share Tech Mono', monospace`;
+        ctx.fillStyle='rgba(200,232,255,0.65)';
+        ctx.fillText('['+atk.team+']', sx, sy-(baseR+25)*zoom);
+      }
+      ctx.restore();
+    }
+
+    ctx.globalAlpha=1;
+  }
+}
+
+function getCatEmoji(cat){
+  const m={
+    'Routing Attack':'⇄','Code Injection':'⌥','KI-gestützte Täuschung':'◈',
+    'Spyware / Malware':'⚠','Social Engineering':'◉','Network Manipulation':'⬡',
+    'VoIP Attack':'☎','WLAN Attack':'⌁','Kryptografischer Angriff':'⚿',
+    'DoS/DDoS':'⚡','Web Attack':'⬡','Exploitation':'⚔','Privilege Escalation':'▲',
+  };
+  return m[cat]||'●';
+}
+
+function hitTest(mx,my){
+  for(const atk of ATTACKS){
+    const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
+    const {sx,sy,z}=project(p3);
+    if(z<0) continue;
+    if(Math.hypot(mx-sx,my-sy)<24*zoom) return atk;
+  }
+  return null;
+}
+
+function openPanel(atk){
+  const col=TEAMS[atk.team].color;
+  document.getElementById('p-title').textContent=atk.name;
+  document.getElementById('p-team').textContent=atk.team;
+  document.getElementById('p-team').style.color=col;
+  document.getElementById('p-team').style.borderColor=col;
+  document.getElementById('p-layer').textContent=atk.layer;
+  document.getElementById('p-cat').textContent=atk.cat;
+  document.getElementById('p-sev').textContent=atk.sev;
+  document.getElementById('p-proto').textContent=atk.proto;
+  document.getElementById('p-desc').textContent=atk.desc;
+  ['pf-layer','pf-cat','pf-sev','pf-proto'].forEach(id=>{ document.getElementById(id).style.borderLeftColor=col; });
+  document.getElementById('detail-panel').classList.add('visible');
+  autoRotate=false;
+}
+function closePanel(){ document.getElementById('detail-panel').classList.remove('visible'); hoveredNode=null; autoRotate=true; }
+
+canvas.addEventListener('mousedown',e=>{ dragging=true; dragMoved=false; lastMX=e.clientX; lastMY=e.clientY; autoRotate=false; });
+canvas.addEventListener('mousemove',e=>{
+  if(dragging){
+    const dx=e.clientX-lastMX, dy=e.clientY-lastMY;
+    if(Math.hypot(dx,dy)>2) dragMoved=true;
+    rotY+=dx*0.008; rotX+=dy*0.008;
+    rotX=Math.max(-1.4,Math.min(1.4,rotX));
+    lastMX=e.clientX; lastMY=e.clientY;
+  } else {
+    const hit=hitTest(e.clientX,e.clientY);
+    hoveredNode=hit?hit.id:null;
+    canvas.style.cursor=hit?'pointer':'grab';
+  }
+});
+canvas.addEventListener('mouseup',e=>{
+  if(!dragging) return;
+  dragging=false;
+  if(!dragMoved){
+    const hit=hitTest(e.clientX,e.clientY);
+    if(hit) openPanel(hit);
+    else { closePanel(); autoRotate=true; }
+  }
+});
+canvas.addEventListener('wheel',e=>{ zoom*=e.deltaY>0?0.92:1.09; zoom=Math.max(0.45,Math.min(2.8,zoom)); });
+canvas.addEventListener('touchstart',e=>{ const t=e.touches[0]; dragging=true; dragMoved=false; lastMX=t.clientX; lastMY=t.clientY; autoRotate=false; });
+canvas.addEventListener('touchmove',e=>{ e.preventDefault(); const t=e.touches[0]; rotY+=(t.clientX-lastMX)*0.01; rotX+=(t.clientY-lastMY)*0.01; rotX=Math.max(-1.4,Math.min(1.4,rotX)); lastMX=t.clientX; lastMY=t.clientY; dragMoved=true; },{passive:false});
+canvas.addEventListener('touchend',()=>dragging=false);
+
+function loop(){
+  requestAnimationFrame(loop);
+  animFrame++;
+  if(autoRotate) rotY+=0.0025;
+  ctx.clearRect(0,0,W,H);
+
+  if(animFrame===1){
+    window._stars=[];
+    for(let i=0;i<220;i++) window._stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4,a:0.2+Math.random()*0.8,phase:Math.random()*Math.PI*2});
+  }
+  if(window._stars){
+    for(const s of window._stars){
+      ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
+      ctx.fillStyle=`hsl(${200+Math.random()*60},80%,90%)`;
+      ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  drawGlobe();
+  drawNodes();
+}
+loop();
+</script>
+</body>
+</html>

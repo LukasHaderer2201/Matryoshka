@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marianna Pospelova — Matryoshka</title>
+<meta name="description" content="Marianna Pospelova, Projektleiterin der Diplomarbeit Matryoshka: Netzwerkangriffe und Schutzmaßnahmen.">
+<link rel="icon" href="../assets/logo-mark.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+<header class="topbar">
+  <a class="brand" href="../index.html">
+    <img src="../assets/logo-mark.png" alt="Logo Matryoshka">
+    <span class="brand-name">Matryoshka</span>
+  </a>
+  <nav class="team-nav" aria-label="Projektteam">
+    <a href="../pospelova/index.html" aria-current="page">Pospelova</a>
+    <a href="../ploner/index.html">Ploner</a>
+    <a href="../haderer/index.html">Haderer</a>
+    <a href="../mitterlehner/index.html">Mitterlehner</a>
+    <a href="../aydin/index.html">Aydin</a>
+  </nav>
+  <a class="imprint-link" href="../impressum/index.html">Impressum</a>
+</header>
+
+<main id="inhalt">
+
+  <!-- ============ Person ============ -->
+  <section class="person-hero">
+    <div class="container person-grid">
+
+      <div class="portrait-buehne">
+        <svg class="portrait-ringe" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+          <g stroke="#c58312" stroke-opacity="0.2">
+            <circle cx="200" cy="200" r="120" stroke-width="1"/>
+            <circle cx="200" cy="200" r="165" stroke-width="1"/>
+            <circle cx="200" cy="200" r="195" stroke-width="1"/>
+          </g>
+          <g class="ring-spin">
+            <circle cx="200" cy="200" r="145" stroke="#c58312" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="2 14"/>
+          </g>
+          <g class="ring-spin ring-spin--rueck">
+            <circle cx="200" cy="200" r="180" stroke="#8a120f" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="40 22"/>
+          </g>
+        </svg>
+
+        <figure class="portrait">
+          <span class="portrait-marke" aria-hidden="true">01 / 05</span>
+          <span class="initialen" aria-hidden="true">MP</span>
+          <img src="Foto.jpeg" alt="Portrait von Marianna Pospelova"
+               onerror="this.remove()">
+          <svg class="portrait-ecken" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M2,18 V2 H18"/>
+            <path d="M82,2 H98 V18"/>
+            <path d="M2,82 V98 H18"/>
+            <path d="M98,82 V98 H82"/>
+          </svg>
+          <figcaption>Marianna Pospelova · 5CN</figcaption>
+        </figure>
+      </div>
+
+      <div class="person-kopf">
+        <span class="person-rolle">Projektleiterin</span>
+        <h1>Marianna Pospelova</h1>
+        <p class="person-schwerpunkt">Netzwerkangriffe und Schutzmaßnahmen</p>
+
+        <dl class="datenblatt">
+          <div class="datenblatt-zeile"><dt>Funktion</dt><dd>Projektleiterin</dd></div>
+          <div class="datenblatt-zeile"><dt>Kürzel</dt><dd>POS</dd></div>
+          <div class="datenblatt-zeile"><dt>Klasse</dt><dd>5CN</dd></div>
+          <div class="datenblatt-zeile"><dt>Individuelle Betreuung</dt><dd>Bernhard Nickel (NIC)</dd></div>
+          <div class="datenblatt-zeile"><dt>E-Mail</dt><dd>
+            <a href="mailto:marianna.pospelova@htl.rennweg.at">marianna.pospelova@htl.rennweg.at</a><br>
+            <a href="mailto:2216@htl.rennweg.at">2216@htl.rennweg.at</a>
+          </dd></div>
+          <div class="datenblatt-zeile"><dt>Projekt</dt><dd>Matryoshka — Schicht für Schicht zur Sicherheit</dd></div>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Aufgabenbereich ============ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Themenschwerpunkt</span>
+        <h2>Netzwerkangriffe und Schutzmaßnahmen</h2>
+        <p>Verschiedene Netzwerkangriffe werden in einer kontrollierten Testumgebung untersucht und auf mehreren OSI-Schichten simuliert, um Schwachstellen und deren Auswirkungen auf die Infrastruktur sichtbar zu machen (Red-Team-Phase). Auf Basis der Ergebnisse werden Sicherheits- und Verteidigungsmaßnahmen entwickelt, umgesetzt und dokumentiert (Blue-Team-Phase).</p>
+      </div>
+
+      <div class="section-kopf reveal" style="margin-bottom:34px">
+        <span class="label label--still">Aufgabenstellung · Ziele</span>
+      </div>
+
+      <div class="schichten">
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 2A</span>
+          <div>
+            <h3>STP Manipulation durch Root Bridge Attack</h3>
+            <p>Auf OSI-Layer 2 werden gefälschte BPDU-Nachrichten in eine Switch-Topologie eingespeist, um die STP-Struktur zu beeinflussen und die Root-Bridge-Rolle zu übernehmen. Das Ziel ist erreicht, wenn die veränderten Netzwerkpfade dokumentiert vorliegen und die Gegenmaßnahmen den Angriff vollständig verhindern.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 2B</span>
+          <div>
+            <h3>ICMP Redirect</h3>
+            <p>Manipulierte ICMP-Nachrichten täuschen einem Client auf OSI-Layer 3 einen alternativen Netzwerkweg vor. Das Ziel ist erreicht, wenn die Umleitung des Datenverkehrs dokumentiert vorliegt und die implementierten Gegenmaßnahmen den Angriff vollständig verhindern.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 2C</span>
+          <div>
+            <h3>Firewall State Table Exhaustion</h3>
+            <p>Eine hohe Anzahl gleichzeitiger Verbindungsversuche belastet auf OSI-Layer 4 gezielt die State Table einer Firewall. Das Ziel ist erreicht, wenn die Auswirkungen auf Verbindungsaufbau, Erreichbarkeit und Firewall-Ressourcen dokumentiert vorliegen und die Gegenmaßnahmen greifen.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 2D</span>
+          <div>
+            <h3>DNS-Spoofing Angriff</h3>
+            <p>Manipulierte DNS-Antworten leiten einen Client auf OSI-Layer 7 auf eine falsche Zieladresse um. Das Ziel ist erreicht, wenn die DNS-Manipulation samt resultierender Umleitung dokumentiert vorliegt und die Gegenmaßnahmen den Angriff vollständig verhindern.</p>
+          </div>
+        </article>
+        <article class="schicht schicht--optional reveal">
+          <span class="schicht-kennung">ZIEL-O 5</span>
+          <div>
+            <h3>Erweiterung des DNS-Spoofing-Szenarios um Phishing und MITM</h3>
+            <p>Das DNS-Spoofing-Szenario wird um eine gefälschte interne Webseite erweitert; der entstehende Datenverkehr wird über eine Man-in-the-Middle-Position analysiert. Weiterleitung, gefälschte Webseite, MITM-Situation und Schutzmaßnahmen werden nachvollziehbar dokumentiert.</p>
+          </div>
+        </article>
+      </div>
+
+      <a class="naechste" href="../ploner/index.html">
+        <span class="label label--still">Nächstes Teammitglied</span>
+        <span class="name">Fabian Ploner →</span>
+      </a>
+
+      <a class="zurueck" href="../index.html">← Zurück zur Startseite</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Fußzeile ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-marke">
+      <img src="../assets/logo-mark.png" alt="">
+      <span>Matryoshka</span>
+    </div>
+    <p>Diplomarbeit 2026/27 · HTL 3 Rennweg, Rennweg 89b, 1030 Wien</p>
+    <p class="footer-sponsor">Sponsor: <a href="https://www.frequentis.com/de" target="_blank" rel="noopener">Frequentis</a></p>
+    <p><a href="../impressum/index.html">Impressum</a></p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matryoshka — Schicht für Schicht zur Sicherheit</title>
+<meta name="description" content="Matryoshka: Diplomarbeit der HTL 3 Rennweg zur Simulation und Abwehr mehrschichtiger Cyberangriffe nach dem Red-Blue-Team-Prinzip.">
+<link rel="icon" href="assets/logo-mark.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+<!-- ============ Kopfzeile ============ -->
+<header class="topbar">
+  <a class="brand" href="index.html">
+    <img src="assets/logo-mark.png" alt="Logo Matryoshka">
+    <span class="brand-name">Matryoshka</span>
+  </a>
+  <nav class="team-nav" aria-label="Projektteam">
+    <a href="pospelova/index.html">Pospelova</a>
+    <a href="ploner/index.html">Ploner</a>
+    <a href="haderer/index.html">Haderer</a>
+    <a href="mitterlehner/index.html">Mitterlehner</a>
+    <a href="aydin/index.html">Aydin</a>
+  </nav>
+  <a class="imprint-link" href="impressum/index.html">Impressum</a>
+</header>
+
+<main id="inhalt">
+
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <svg class="hero-rings" viewBox="0 0 800 800" aria-hidden="true" focusable="false">
+      <g stroke="#c58312" stroke-opacity="0.2">
+        <circle cx="400" cy="400" r="130" stroke-width="1"/>
+        <circle cx="400" cy="400" r="205" stroke-width="1"/>
+        <circle cx="400" cy="400" r="290" stroke-width="1"/>
+        <circle cx="400" cy="400" r="390" stroke-width="1"/>
+      </g>
+      <g class="ring-spin">
+        <circle cx="400" cy="400" r="245" stroke="#c58312" stroke-opacity="0.5"
+                stroke-width="1" stroke-dasharray="2 16"/>
+      </g>
+      <g class="ring-spin ring-spin--rueck">
+        <circle cx="400" cy="400" r="340" stroke="#8a120f" stroke-opacity="0.65"
+                stroke-width="1" stroke-dasharray="60 34"/>
+      </g>
+    </svg>
+
+    <div class="hero-inner">
+      <img class="hero-logo" src="assets/logo-mark.png" alt="Matryoshka — Logo der Diplomarbeit">
+      <h1 class="hero-title">Matr<span>y</span>oshka</h1>
+      <p class="hero-claim">Schicht für Schicht zur Sicherheit</p>
+      <div class="hero-meta">
+        <span>Diplomarbeit 2026/27</span>
+        <span>HTL 3 Rennweg</span>
+        <span>Klasse 5CN &amp; 5AX</span>
+        <span>Red Team · Blue Team</span>
+      </div>
+    </div>
+
+    <div class="scroll-hint" aria-hidden="true">
+      <span>Big Picture</span>
+      <i></i>
+    </div>
+  </section>
+
+  <!-- ============ Big Picture ============ -->
+  <section class="section" id="bigpicture">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Ziel-O 1 · Big Picture</span>
+        <h2>Angriffe auf einen Blick</h2>
+        <p>
+          Die interaktive Weltkarte sammelt die Angriffsszenarien dieser Diplomarbeit
+          und ausgewählte Angriffe früherer Gruppen. Ein Klick auf einen Knoten öffnet
+          Details zu OSI-Layer, Kategorie, Protokoll und Schweregrad.
+        </p>
+      </div>
+
+      <div class="bigpicture-rahmen reveal">
+        <iframe src="assets/bigpicture.html"
+                title="Big Picture — interaktive Übersicht der Cyberangriffe"
+                loading="lazy"></iframe>
+      </div>
+
+      <div class="bigpicture-fuss reveal">
+        <p>Ziehen dreht den Globus, Scrollen zoomt, ein Klick öffnet die Detailkarte.</p>
+        <a class="btn" href="assets/bigpicture.html" target="_blank" rel="noopener">
+          In neuem Tab öffnen ↗
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Projektidee ============ -->
+  <section class="section section--rand" id="projekt">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Projektidee</span>
+        <h2>Angreifen, verstehen, absichern</h2>
+      </div>
+      <div class="section-kopf reveal" style="margin-bottom:0">
+        <p>
+          Matryoshka simuliert mehrschichtige Cyberangriffe in einer vollständig isolierten
+          Testumgebung. Jedes Teammitglied bearbeitet vier Angriffsszenarien: Zuerst wird
+          der Angriff gezielt durchgeführt und die Schwachstelle dokumentiert (Red Team),
+          anschließend werden Gegenmaßnahmen entworfen, implementiert und gegen denselben
+          Angriff erneut getestet (Blue Team).
+        </p>
+        <p>
+          Alle Angriffe, Analysen und Schutzmaßnahmen werden laufend in einer gemeinsamen
+          Projektdokumentation festgehalten. Ziel ist ein belastbares Verständnis realer
+          Angriffsmethoden und wirksamer Verteidigungsstrategien in modernen Netzwerken.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Team ============ -->
+  <section class="section section--rand" id="team">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Projektteam</span>
+        <h2>Fünf Schwerpunkte, ein Netzwerk</h2>
+        <p>Jede Person verantwortet einen eigenen Themenbereich innerhalb der gemeinsamen Testumgebung.</p>
+      </div>
+
+      <div class="team-grid reveal">
+        <a class="team-karte" href="pospelova/index.html">
+          <span class="rolle">Projektleiterin</span>
+          <span class="name">Marianna Pospelova</span>
+          <span class="thema">Netzwerkangriffe und Schutzmaßnahmen</span>
+        </a>
+        <a class="team-karte" href="ploner/index.html">
+          <span class="rolle">Projektleiter Stv.</span>
+          <span class="name">Fabian Ploner</span>
+          <span class="thema">Kryptografische Angriffe und Schutzmaßnahmen</span>
+        </a>
+        <a class="team-karte" href="haderer/index.html">
+          <span class="rolle">Projektmitarbeiter</span>
+          <span class="name">Lukas Haderer</span>
+          <span class="thema">Malwareangriff und Schutzmaßnahmen</span>
+        </a>
+        <a class="team-karte" href="mitterlehner/index.html">
+          <span class="rolle">Projektmitarbeiter</span>
+          <span class="name">David Mitterlehner</span>
+          <span class="thema">Wireless-Angriffe und Schutzmaßnahmen</span>
+        </a>
+        <a class="team-karte" href="aydin/index.html">
+          <span class="rolle">Projektmitarbeiter</span>
+          <span class="name">Efe Aydin</span>
+          <span class="thema">VoIP-Infrastrukturen und Protokollangriffe</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Fußzeile ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-marke">
+      <img src="assets/logo-mark.png" alt="">
+      <span>Matryoshka</span>
+    </div>
+    <p>Diplomarbeit 2026/27 · HTL 3 Rennweg, Rennweg 89b, 1030 Wien</p>
+    <p class="footer-sponsor">Sponsor: <a href="https://www.frequentis.com/de" target="_blank" rel="noopener">Frequentis</a></p>
+    <p><a href="impressum/index.html">Impressum</a></p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

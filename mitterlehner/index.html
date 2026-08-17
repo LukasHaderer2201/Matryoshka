@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>David Mitterlehner — Matryoshka</title>
+<meta name="description" content="David Mitterlehner, Projektmitarbeiter der Diplomarbeit Matryoshka: Wireless-Angriffe und Schutzmaßnahmen.">
+<link rel="icon" href="../assets/logo-mark.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+<header class="topbar">
+  <a class="brand" href="../index.html">
+    <img src="../assets/logo-mark.png" alt="Logo Matryoshka">
+    <span class="brand-name">Matryoshka</span>
+  </a>
+  <nav class="team-nav" aria-label="Projektteam">
+    <a href="../pospelova/index.html">Pospelova</a>
+    <a href="../ploner/index.html">Ploner</a>
+    <a href="../haderer/index.html">Haderer</a>
+    <a href="../mitterlehner/index.html" aria-current="page">Mitterlehner</a>
+    <a href="../aydin/index.html">Aydin</a>
+  </nav>
+  <a class="imprint-link" href="../impressum/index.html">Impressum</a>
+</header>
+
+<main id="inhalt">
+
+  <!-- ============ Person ============ -->
+  <section class="person-hero">
+    <div class="container person-grid">
+
+      <div class="portrait-buehne">
+        <svg class="portrait-ringe" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+          <g stroke="#c58312" stroke-opacity="0.2">
+            <circle cx="200" cy="200" r="120" stroke-width="1"/>
+            <circle cx="200" cy="200" r="165" stroke-width="1"/>
+            <circle cx="200" cy="200" r="195" stroke-width="1"/>
+          </g>
+          <g class="ring-spin">
+            <circle cx="200" cy="200" r="145" stroke="#c58312" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="2 14"/>
+          </g>
+          <g class="ring-spin ring-spin--rueck">
+            <circle cx="200" cy="200" r="180" stroke="#8a120f" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="40 22"/>
+          </g>
+        </svg>
+
+        <figure class="portrait">
+          <span class="portrait-marke" aria-hidden="true">04 / 05</span>
+          <span class="initialen" aria-hidden="true">DM</span>
+          <img src="Foto.jpeg" alt="Portrait von David Mitterlehner"
+               onerror="this.remove()">
+          <svg class="portrait-ecken" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M2,18 V2 H18"/>
+            <path d="M82,2 H98 V18"/>
+            <path d="M2,82 V98 H18"/>
+            <path d="M98,82 V98 H82"/>
+          </svg>
+          <figcaption>David Mitterlehner · 5CN</figcaption>
+        </figure>
+      </div>
+
+      <div class="person-kopf">
+        <span class="person-rolle">Projektmitarbeiter</span>
+        <h1>David Mitterlehner</h1>
+        <p class="person-schwerpunkt">Wireless-Angriffe und Schutzmaßnahmen</p>
+
+        <dl class="datenblatt">
+          <div class="datenblatt-zeile"><dt>Funktion</dt><dd>Projektmitarbeiter</dd></div>
+          <div class="datenblatt-zeile"><dt>Kürzel</dt><dd>MIT</dd></div>
+          <div class="datenblatt-zeile"><dt>Klasse</dt><dd>5CN</dd></div>
+          <div class="datenblatt-zeile"><dt>Individuelle Betreuung</dt><dd>Faik Nushi (NUH)</dd></div>
+          <div class="datenblatt-zeile"><dt>E-Mail</dt><dd>
+            <a href="mailto:david.mitterlehner@htl.rennweg.at">david.mitterlehner@htl.rennweg.at</a><br>
+            <a href="mailto:1186@htl.rennweg.at">1186@htl.rennweg.at</a>
+          </dd></div>
+          <div class="datenblatt-zeile"><dt>Projekt</dt><dd>Matryoshka — Schicht für Schicht zur Sicherheit</dd></div>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Aufgabenbereich ============ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Themenschwerpunkt</span>
+        <h2>Wireless-Angriffe und Schutzmaßnahmen</h2>
+        <p>Gängige Angriffsvektoren im Bereich drahtloser Kommunikation – WLAN und Bluetooth – werden untersucht, bewertet und in einer isolierten Testumgebung gezielt durchgeführt (Red-Team-Phase). Die kompromittierten Systeme werden analysiert, Gegenmaßnahmen implementiert und die Angriffe zur Verifikation wiederholt (Blue-Team-Phase).</p>
+      </div>
+
+      <div class="section-kopf reveal" style="margin-bottom:34px">
+        <span class="label label--still">Aufgabenstellung · Ziele</span>
+      </div>
+
+      <div class="schichten">
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 4A</span>
+          <div>
+            <h3>Evil Twin Attack</h3>
+            <p>Ein gefälschter Access Point imitiert eine legitime SSID und verleitet Clients zur Verbindung, um über ein Captive Portal Zugangsdaten abzugreifen. Das Ziel ist erreicht, wenn die erbeuteten Zugangsdaten dokumentiert vorliegen und die Gegenmaßnahmen den Angriff vollständig abwehren.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 4B</span>
+          <div>
+            <h3>Replay Attack</h3>
+            <p>Der Datenverkehr eines WLAN-Netzwerks wird mitgeschnitten und abgefangene Authentifizierungspakete werden erneut eingespielt, um Schwachstellen in der Paketverarbeitung auszunutzen. Das Ziel ist erreicht, wenn die erfolgreiche Wiedereinspielung dokumentiert ist und die Gegenmaßnahmen greifen.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 4C</span>
+          <div>
+            <h3>PMKID Attack</h3>
+            <p>Der PMKID-Wert eines WPA2-geschützten Access Points wird abgefangen und das zugrunde liegende Passwort per Offline-Cracking rekonstruiert – ganz ohne aktiv verbundenen Client. Das Ziel ist erreicht, wenn das rekonstruierte Passwort dokumentiert vorliegt und die Gegenmaßnahmen den Angriff abwehren.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 4D</span>
+          <div>
+            <h3>BlueSnarfing</h3>
+            <p>Über Schwachstellen im Bluetooth-Protokoll wird unbefugter Zugriff auf sensible Daten eines Zielgeräts erlangt, ohne dass das Opfer die Verbindung bestätigt. Das Ziel ist erreicht, wenn die extrahierten Daten dokumentiert vorliegen und die Gegenmaßnahmen den Angriff vollständig abwehren.</p>
+          </div>
+        </article>
+        <article class="schicht schicht--optional reveal">
+          <span class="schicht-kennung">ZIEL-O 4</span>
+          <div>
+            <h3>WPA3 Dragonblood Attack</h3>
+            <p>Ein kombinierter Angriff auf den WPA3-SAE-Handshake verbindet einen Downgrade auf WPA2 mit einem Side-Channel-Angriff auf den Dragonfly-Handshake, um Passwortinformationen zu gewinnen und das Passwort offline zu rekonstruieren.</p>
+          </div>
+        </article>
+      </div>
+
+      <a class="naechste" href="../aydin/index.html">
+        <span class="label label--still">Nächstes Teammitglied</span>
+        <span class="name">Efe Aydin →</span>
+      </a>
+
+      <a class="zurueck" href="../index.html">← Zurück zur Startseite</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Fußzeile ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-marke">
+      <img src="../assets/logo-mark.png" alt="">
+      <span>Matryoshka</span>
+    </div>
+    <p>Diplomarbeit 2026/27 · HTL 3 Rennweg, Rennweg 89b, 1030 Wien</p>
+    <p class="footer-sponsor">Sponsor: <a href="https://www.frequentis.com/de" target="_blank" rel="noopener">Frequentis</a></p>
+    <p><a href="../impressum/index.html">Impressum</a></p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

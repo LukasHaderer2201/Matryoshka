@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lukas Haderer — Matryoshka</title>
+<meta name="description" content="Lukas Haderer, Projektmitarbeiter der Diplomarbeit Matryoshka: Malwareangriff und Schutzmaßnahmen.">
+<link rel="icon" href="../assets/logo-mark.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+<header class="topbar">
+  <a class="brand" href="../index.html">
+    <img src="../assets/logo-mark.png" alt="Logo Matryoshka">
+    <span class="brand-name">Matryoshka</span>
+  </a>
+  <nav class="team-nav" aria-label="Projektteam">
+    <a href="../pospelova/index.html">Pospelova</a>
+    <a href="../ploner/index.html">Ploner</a>
+    <a href="../haderer/index.html" aria-current="page">Haderer</a>
+    <a href="../mitterlehner/index.html">Mitterlehner</a>
+    <a href="../aydin/index.html">Aydin</a>
+  </nav>
+  <a class="imprint-link" href="../impressum/index.html">Impressum</a>
+</header>
+
+<main id="inhalt">
+
+  <!-- ============ Person ============ -->
+  <section class="person-hero">
+    <div class="container person-grid">
+
+      <div class="portrait-buehne">
+        <svg class="portrait-ringe" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+          <g stroke="#c58312" stroke-opacity="0.2">
+            <circle cx="200" cy="200" r="120" stroke-width="1"/>
+            <circle cx="200" cy="200" r="165" stroke-width="1"/>
+            <circle cx="200" cy="200" r="195" stroke-width="1"/>
+          </g>
+          <g class="ring-spin">
+            <circle cx="200" cy="200" r="145" stroke="#c58312" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="2 14"/>
+          </g>
+          <g class="ring-spin ring-spin--rueck">
+            <circle cx="200" cy="200" r="180" stroke="#8a120f" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="40 22"/>
+          </g>
+        </svg>
+
+        <figure class="portrait">
+          <span class="portrait-marke" aria-hidden="true">03 / 05</span>
+          <span class="initialen" aria-hidden="true">LH</span>
+          <img src="Foto.jpeg" alt="Portrait von Lukas Haderer"
+               onerror="this.remove()">
+          <svg class="portrait-ecken" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M2,18 V2 H18"/>
+            <path d="M82,2 H98 V18"/>
+            <path d="M2,82 V98 H18"/>
+            <path d="M98,82 V98 H82"/>
+          </svg>
+          <figcaption>Lukas Haderer · 5CN</figcaption>
+        </figure>
+      </div>
+
+      <div class="person-kopf">
+        <span class="person-rolle">Projektmitarbeiter</span>
+        <h1>Lukas Haderer</h1>
+        <p class="person-schwerpunkt">Malwareangriff und Schutzmaßnahmen</p>
+
+        <dl class="datenblatt">
+          <div class="datenblatt-zeile"><dt>Funktion</dt><dd>Projektmitarbeiter</dd></div>
+          <div class="datenblatt-zeile"><dt>Kürzel</dt><dd>HAD</dd></div>
+          <div class="datenblatt-zeile"><dt>Klasse</dt><dd>5CN</dd></div>
+          <div class="datenblatt-zeile"><dt>Individuelle Betreuung</dt><dd>Bernhard Nickel (NIC)</dd></div>
+          <div class="datenblatt-zeile"><dt>E-Mail</dt><dd>
+            <a href="mailto:lukas.haderer@htl.rennweg.at">lukas.haderer@htl.rennweg.at</a><br>
+            <a href="mailto:2201@htl.rennweg.at">2201@htl.rennweg.at</a>
+          </dd></div>
+          <div class="datenblatt-zeile"><dt>Projekt</dt><dd>Matryoshka — Schicht für Schicht zur Sicherheit</dd></div>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Aufgabenbereich ============ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Themenschwerpunkt</span>
+        <h2>Malwareangriff und Schutzmaßnahmen</h2>
+        <p>Gängige Malware-Angriffsvektoren werden untersucht und bewertet; auf Basis dieser Analyse werden Angriffe ausgewählt und in einer isolierten Testumgebung gezielt durchgeführt (Red-Team-Phase). Das kompromittierte System wird analysiert, Gegenmaßnahmen werden entworfen und implementiert – anschließend muss der ursprüngliche Angriff an den Schutzmaßnahmen scheitern (Blue-Team-Phase).</p>
+      </div>
+
+      <div class="section-kopf reveal" style="margin-bottom:34px">
+        <span class="label label--still">Aufgabenstellung · Ziele</span>
+      </div>
+
+      <div class="schichten">
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 1A</span>
+          <div>
+            <h3>Netzwerkangriff durch einen Wurm</h3>
+            <p>Ein Netzwerkwurm wird auf einem Startsystem ausgeführt und breitet sich ohne jegliche Benutzerinteraktion selbstständig über offene Netzwerkfreigaben auf weitere virtuelle Maschinen aus. Das Ziel ist erreicht, wenn die vollständige Ausbreitung dokumentiert vorliegt und die Gegenmaßnahmen den Wurm auf das Startsystem beschränken.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 1B</span>
+          <div>
+            <h3>Dateiverschlüsselung durch Ransomware</h3>
+            <p>Eine simulierte Ransomware verschlüsselt gezielt Benutzerdateien und macht sie unzugänglich. Das Ziel ist erreicht, wenn Verhalten und betroffene Verzeichnisse dokumentiert vorliegen und die Gegenmaßnahmen den Angriff frühzeitig stoppen sowie die vollständige Wiederherstellung sicherstellen.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 1C</span>
+          <div>
+            <h3>Schadsoftware-Einschleusung via Trojaner</h3>
+            <p>Über eine gefälschte E-Mail wird ein schadhafter Anhang zugestellt, der nach dem Öffnen eine Verbindung zu einem simulierten Command-and-Control-Server aufbaut. Das Ziel ist erreicht, wenn Netzwerktraffic und Prozessaktivität dokumentiert sind und die Gegenmaßnahmen Zustellung wie Ausführung verhindern.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 1D</span>
+          <div>
+            <h3>Manipulation durch Scareware</h3>
+            <p>Eine gefälschte Sicherheitswarnung verleitet den Benutzer zur Installation von Schadsoftware, die legitime Sicherheitssoftware deaktiviert. Das Ziel ist erreicht, wenn Systemprozesse und Registry-Veränderungen dokumentiert vorliegen und die Gegenmaßnahmen die Installation vollständig unterbinden.</p>
+          </div>
+        </article>
+        <article class="schicht schicht--optional reveal">
+          <span class="schicht-kennung">ZIEL-O 1</span>
+          <div>
+            <h3>Big Picture</h3>
+            <p>Eine grafische Oberfläche stellt die behandelten Cyberangriffe strukturiert dar und kategorisiert sie – sowohl die Szenarien dieser Diplomarbeit als auch ausgewählte Angriffe früherer Gruppen. Die Darstellung unterstützt Präsentation, Dokumentation und die verständliche Vermittlung von Angriffstechniken.</p>
+          </div>
+        </article>
+      </div>
+
+      <a class="naechste" href="../mitterlehner/index.html">
+        <span class="label label--still">Nächstes Teammitglied</span>
+        <span class="name">David Mitterlehner →</span>
+      </a>
+
+      <a class="zurueck" href="../index.html">← Zurück zur Startseite</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Fußzeile ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-marke">
+      <img src="../assets/logo-mark.png" alt="">
+      <span>Matryoshka</span>
+    </div>
+    <p>Diplomarbeit 2026/27 · HTL 3 Rennweg, Rennweg 89b, 1030 Wien</p>
+    <p class="footer-sponsor">Sponsor: <a href="https://www.frequentis.com/de" target="_blank" rel="noopener">Frequentis</a></p>
+    <p><a href="../impressum/index.html">Impressum</a></p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

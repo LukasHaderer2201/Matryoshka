@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efe Aydin — Matryoshka</title>
+<meta name="description" content="Efe Aydin, Projektmitarbeiter der Diplomarbeit Matryoshka: Analyse, Simulation und Härtung von VoIP-Infrastrukturen.">
+<link rel="icon" href="../assets/logo-mark.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#inhalt">Zum Inhalt springen</a>
+
+<header class="topbar">
+  <a class="brand" href="../index.html">
+    <img src="../assets/logo-mark.png" alt="Logo Matryoshka">
+    <span class="brand-name">Matryoshka</span>
+  </a>
+  <nav class="team-nav" aria-label="Projektteam">
+    <a href="../pospelova/index.html">Pospelova</a>
+    <a href="../ploner/index.html">Ploner</a>
+    <a href="../haderer/index.html">Haderer</a>
+    <a href="../mitterlehner/index.html">Mitterlehner</a>
+    <a href="../aydin/index.html" aria-current="page">Aydin</a>
+  </nav>
+  <a class="imprint-link" href="../impressum/index.html">Impressum</a>
+</header>
+
+<main id="inhalt">
+
+  <!-- ============ Person ============ -->
+  <section class="person-hero">
+    <div class="container person-grid">
+
+      <div class="portrait-buehne">
+        <svg class="portrait-ringe" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+          <g stroke="#c58312" stroke-opacity="0.2">
+            <circle cx="200" cy="200" r="120" stroke-width="1"/>
+            <circle cx="200" cy="200" r="165" stroke-width="1"/>
+            <circle cx="200" cy="200" r="195" stroke-width="1"/>
+          </g>
+          <g class="ring-spin">
+            <circle cx="200" cy="200" r="145" stroke="#c58312" stroke-opacity="0.55" stroke-width="1" stroke-dasharray="2 14"/>
+          </g>
+          <g class="ring-spin ring-spin--rueck">
+            <circle cx="200" cy="200" r="180" stroke="#8a120f" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="40 22"/>
+          </g>
+        </svg>
+
+        <figure class="portrait">
+          <span class="portrait-marke" aria-hidden="true">05 / 05</span>
+          <span class="initialen" aria-hidden="true">EA</span>
+          <img src="Foto.jpeg" alt="Portrait von Efe Aydin"
+               onerror="this.remove()">
+          <svg class="portrait-ecken" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M2,18 V2 H18"/>
+            <path d="M82,2 H98 V18"/>
+            <path d="M2,82 V98 H18"/>
+            <path d="M98,82 V98 H82"/>
+          </svg>
+          <figcaption>Efe Aydin · 5AX</figcaption>
+        </figure>
+      </div>
+
+      <div class="person-kopf">
+        <span class="person-rolle">Projektmitarbeiter</span>
+        <h1>Efe Aydin</h1>
+        <p class="person-schwerpunkt">Analyse, Simulation und Härtung von VoIP-Infrastrukturen</p>
+
+        <dl class="datenblatt">
+          <div class="datenblatt-zeile"><dt>Funktion</dt><dd>Projektmitarbeiter</dd></div>
+          <div class="datenblatt-zeile"><dt>Kürzel</dt><dd>AYD</dd></div>
+          <div class="datenblatt-zeile"><dt>Klasse</dt><dd>5AX</dd></div>
+          <div class="datenblatt-zeile"><dt>Individuelle Betreuung</dt><dd>Faik Nushi (NUH)</dd></div>
+          <div class="datenblatt-zeile"><dt>E-Mail</dt><dd>
+            <a href="mailto:efe.aydin@htl.rennweg.at">efe.aydin@htl.rennweg.at</a><br>
+            <a href="mailto:2032@htl.rennweg.at">2032@htl.rennweg.at</a>
+          </dd></div>
+          <div class="datenblatt-zeile"><dt>Projekt</dt><dd>Matryoshka — Schicht für Schicht zur Sicherheit</dd></div>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Aufgabenbereich ============ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-kopf reveal">
+        <span class="label">Themenschwerpunkt</span>
+        <h2>Analyse, Simulation und Härtung von VoIP-Infrastrukturen</h2>
+        <p>VoIP-Angriffsvektoren – von der automatisierten Aufklärung über Identitätsdiebstahl und Ressourcenerschöpfung bis zum unbefugten Mithören von Datenströmen – werden auf Signalisierungs- und Medienpfad untersucht und in einer isolierten Testumgebung durchgeführt (Red-Team-Phase). Anschließend sichern Gegenmaßnahmen auf Netzwerk- und Anwendungsebene Verfügbarkeit, Integrität und Vertraulichkeit der Infrastruktur (Blue-Team-Phase).</p>
+      </div>
+
+      <div class="section-kopf reveal" style="margin-bottom:34px">
+        <span class="label label--still">Aufgabenstellung · Ziele</span>
+      </div>
+
+      <div class="schichten">
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 3A</span>
+          <div>
+            <h3>Verteidigung gegen passives Abhören via SPAN-Port</h3>
+            <p>Am gespiegelten Switch-Port wird der unverschlüsselte RTP-Medienpfad mitgeschnitten und die Sprachinformation in Echtzeit rekonstruiert. Das Ziel ist erreicht, wenn das Gespräch als lesbare Audiodatei dokumentiert vorliegt und die flächendeckende Aktivierung von SRTP das Mithören kryptografisch unterbindet.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 3B</span>
+          <div>
+            <h3>SIP Registration Hijacking</h3>
+            <p>Durch die gezielte Injektion gefälschter SIP-REGISTER-Pakete wird die Identität eines legitimen Nutzers an der Telefonanlage imitiert und eingehende Anrufe werden live umgeleitet. Das Ziel ist erreicht, wenn die Gesprächsübernahme dokumentiert vorliegt und SIP-TLS jeden Identitätsdiebstahl abwehrt.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 3C</span>
+          <div>
+            <h3>SIP INVITE-Flooding DoS</h3>
+            <p>Eine manipulierte Flut von INVITE-Anfragen erschöpft die Systemressourcen der Telefonanlage; CPU-Auslastung und Paketverlustrate werden dabei laufend gemessen. Das Ziel ist erreicht, wenn die Dienstunerreichbarkeit dokumentiert ist und QoS-Class-Maps samt Rate-Limiting die Verfügbarkeit für legitime Teilnehmer sichern.</p>
+          </div>
+        </article>
+        <article class="schicht reveal">
+          <span class="schicht-kennung">ZIEL-H 3D</span>
+          <div>
+            <h3>SIP Extension Scanning</h3>
+            <p>Die automatisierte Analyse der SIP-Antwortcodes (200 OK gegenüber 404 Not Found) rekonstruiert eine vollständige Liste der aktiven internen Rufnummern, ohne willkürliche Wählversuche. Das Ziel ist erreicht, wenn die Zielliste dokumentiert vorliegt und ACLs sowie die alwaysauthreject-Härtung jede weitere Aufklärung abwehren.</p>
+          </div>
+        </article>
+        <article class="schicht schicht--optional reveal">
+          <span class="schicht-kennung">ZIEL-O 3</span>
+          <div>
+            <h3>Dienstgüte-Optimierung via Quality of Service</h3>
+            <p>Künstlich erzeugter Hintergrundverkehr sättigt die Bandbreite, um die Auswirkung von Netzwerklast auf die Sprachqualität zu messen. Class-Maps, Policy-Maps und Service-Policies auf den Switches sollen Jitter und Paketverluste für VoIP-Teilnehmer auch unter Volllast messtechnisch nachweisbar vermeiden.</p>
+          </div>
+        </article>
+      </div>
+
+      <a class="naechste" href="../pospelova/index.html">
+        <span class="label label--still">Nächstes Teammitglied</span>
+        <span class="name">Marianna Pospelova →</span>
+      </a>
+
+      <a class="zurueck" href="../index.html">← Zurück zur Startseite</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Fußzeile ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-marke">
+      <img src="../assets/logo-mark.png" alt="">
+      <span>Matryoshka</span>
+    </div>
+    <p>Diplomarbeit 2026/27 · HTL 3 Rennweg, Rennweg 89b, 1030 Wien</p>
+    <p class="footer-sponsor">Sponsor: <a href="https://www.frequentis.com/de" target="_blank" rel="noopener">Frequentis</a></p>
+    <p><a href="../impressum/index.html">Impressum</a></p>
+  </div>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
