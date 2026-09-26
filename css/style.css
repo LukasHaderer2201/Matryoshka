@@ -403,6 +403,11 @@ p:last-child { margin-bottom: 0; }
   text-transform: uppercase;
   color: var(--bone-faint);
 }
+.team-foto .foto-hinweis {
+  text-transform: none;
+  letter-spacing: normal;
+  opacity: 0.7;
+}
 
 .team-grid {
   display: grid;
