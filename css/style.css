@@ -370,6 +370,40 @@ p:last-child { margin-bottom: 0; }
 .btn:hover { background: var(--gold); color: var(--nacht); }
 
 /* ---------- 7. Teamübersicht (Startseite) --------------------- */
+.team-foto {
+  position: relative;
+  margin: 0 0 clamp(34px, 5vw, 58px);
+  border: 1px solid var(--gold-linie);
+  background: #020b16;
+}
+.team-foto::before,
+.team-foto::after {
+  content: "";
+  position: absolute;
+  width: 14px; height: 14px;
+  border: 1px solid var(--gold);
+  z-index: 3;
+  pointer-events: none;
+}
+.team-foto::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.team-foto::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.team-foto img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  object-position: top center;
+}
+.team-foto figcaption {
+  padding: 14px 18px;
+  border-top: 1px solid var(--linie);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+}
+
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
