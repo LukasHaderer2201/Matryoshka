@@ -64,12 +64,33 @@
   .team-badge {
     display:flex; align-items:center; gap:8px;
     background: rgba(0,15,35,0.82); border: 1px solid rgba(0,200,255,0.18);
-    border-radius:4px; padding: 5px 10px;
-    font-family:'Share Tech Mono', monospace; font-size:10px;
+    border-radius:4px; padding: 7px 12px;
+    font-family:'Share Tech Mono', monospace; font-size:10px; color:#c8e8ff;
     backdrop-filter: blur(6px); transition: all 0.2s;
+    cursor:pointer; text-align:left; width:100%;
   }
-  .team-badge:hover { border-color: var(--accent); box-shadow: var(--glow); }
-  .team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .team-badge:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateX(2px); }
+  .team-badge.is-active {
+    background: rgba(0,30,55,0.92);
+    box-shadow: var(--glow);
+  }
+  .team-badge.is-dimmed { opacity: 0.35; }
+  .mode-badge { border-style: dashed; margin-bottom: 4px; }
+  .team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; box-shadow: 0 0 6px currentColor; }
+  .team-count {
+    margin-left:auto; font-size:9px; opacity:0.6; padding-left:10px;
+  }
+
+  #filter-reset {
+    display:flex; align-items:center; gap:6px;
+    margin-top:2px; padding:6px 12px;
+    border:1px dashed rgba(0,200,255,0.35); border-radius:4px;
+    font-family:'Share Tech Mono', monospace; font-size:9.5px; letter-spacing:1px;
+    color: rgba(0,200,255,0.75); cursor:pointer; background:rgba(0,15,35,0.6);
+    transition: all 0.2s; display:none;
+  }
+  #filter-reset.visible { display:flex; }
+  #filter-reset:hover { color:#fff; border-color:var(--accent); box-shadow: var(--glow); }
 
   #counter {
     position:fixed; top:90px; right:20px; z-index:100; text-align:right;
@@ -77,10 +98,12 @@
   .count-box {
     background: rgba(0,15,35,0.85); border: 1px solid rgba(0,200,255,0.25);
     border-radius:6px; padding:12px 18px; backdrop-filter:blur(8px);
+    transition: border-color 0.3s, box-shadow 0.3s;
   }
   .count-num {
     font-family:'Orbitron', monospace; font-size:42px; font-weight:900;
     color: var(--accent); text-shadow: 0 0 30px rgba(0,200,255,0.8); line-height:1;
+    transition: color 0.3s, text-shadow 0.3s;
   }
   .count-label { font-family:'Share Tech Mono', monospace; font-size:9px; letter-spacing:2px; color: rgba(0,200,255,0.5); margin-top:3px; }
 
@@ -113,6 +136,14 @@
     font-family:'Share Tech Mono', monospace; font-size:9px;
     color:rgba(0,200,255,0.3); text-align:right; line-height:2;
   }
+
+  @media (max-width: 720px) {
+    #teams { top:84px; left:10px; max-width:150px; }
+    .team-badge { font-size:9px; padding:6px 9px; }
+    #counter { top:84px; right:10px; }
+    .count-box { padding:9px 13px; }
+    .count-num { font-size:30px; }
+  }
 </style>
 </head>
 <body>
@@ -122,22 +153,16 @@
   <div class="logo-icon">🌐</div>
   <div>
     <h1>Cyber Attack Big Picture</h1>
-    <div class="subtitle">Network &amp; Cyber Attack Taxonomy — Diplomarbeit</div>
+    <div class="subtitle">Network &amp; Cyber Attack Taxonomy — Diplomarbeiten 2026/27</div>
   </div>
 </header>
 
-<div id="teams">
-  <div class="team-badge"><div class="team-dot" style="background:#ff6b35"></div><span>Kobayashi-Maru</span></div>
-  <div class="team-badge"><div class="team-dot" style="background:#a855f7"></div><span>BBB</span></div>
-  <div class="team-badge"><div class="team-dot" style="background:#22d3ee"></div><span>Zerosec</span></div>
-  <div class="team-badge"><div class="team-dot" style="background:#39ff14"></div><span>Matryoshka</span></div>
-  <div class="team-badge"><div class="team-dot" style="background:#f59e0b"></div><span>Beispiele</span></div>
-</div>
+<div id="teams"></div>
 
 <div id="counter">
   <div class="count-box">
-    <div class="count-num">15</div>
-    <div class="count-label">ATTACK SCENARIOS</div>
+    <div class="count-num" id="count-num">0</div>
+    <div class="count-label" id="count-label">ATTACK SCENARIOS</div>
   </div>
 </div>
 
@@ -158,16 +183,18 @@
   <div class="panel-desc" id="p-desc">—</div>
 </div>
 
-<div id="hint">KLICK → Details<br>DRAG → Drehen<br>SCROLL → Zoom</div>
+<div id="hint">KLICK TEAM → Filter<br>KLICK KNOTEN → Details<br>DRAG → Drehen · SCROLL → Zoom</div>
 
 <script>
+// ─── TEAMS (DA-Gruppen) ─────────────────────────────────────────────────────
 const TEAMS = {
   'Kobayashi-Maru': { color:'#ff6b35', glow:'rgba(255,107,53,0.7)' },
+  'Rasputin':        { color:'#ff3cac', glow:'rgba(255,60,172,0.7)' },
   'BBB':            { color:'#a855f7', glow:'rgba(168,85,247,0.7)' },
   'Zerosec':        { color:'#22d3ee', glow:'rgba(34,211,238,0.7)' },
   'Matryoshka':     { color:'#39ff14', glow:'rgba(57,255,20,0.7)'  },
-  'Beispiele':      { color:'#f59e0b', glow:'rgba(245,158,11,0.7)' },
 };
+const TEAM_ORDER = ['Matryoshka','Kobayashi-Maru','Rasputin','BBB','Zerosec'];
 
 // Shape per category for node icons
 const SHAPES = {
@@ -184,72 +211,309 @@ const SHAPES = {
   'Web Attack':              'hexagon',
   'Exploitation':            'square',
   'Privilege Escalation':    'diamond',
+  'IoT Attack':              'square',
+  'Password Attack':         'hexagon',
+  'Forensik & Analyse':      'circle',
+  'Steganographie':          'triangle',
+  'Physischer Angriff':      'square',
+  'Side-Channel':            'hexagon',
+  'Sonstiges':               'circle',
 };
 
-const ATTACKS = [
-  // ── Diplomarbeit ────────────────────────────────────────────────────────
-  { id:0,  name:'BGP Hijacking',         team:'Kobayashi-Maru',
-    layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🔴 KRITISCH', proto:'BGP',
-    desc:'Manipulation von BGP-Routing-Tabellen, um Netzwerkverkehr umzuleiten oder abzufangen. Angreifer kündigen fremde IP-Präfixe an und übernehmen so den Datenfluss ganzer Netzwerksegmente.',
-    lat:52, lon:13 },
-  { id:1,  name:'API Hooking',           team:'BBB',
-    layer:'Layer 7 – Application', cat:'Code Injection', sev:'🟠 HOCH', proto:'Win32 API',
-    desc:'Abfangen und Umleiten von API-Aufrufen im Betriebssystem. Durch IAT-Patching oder Inline-Hooks werden Systemfunktionen manipuliert, um Daten zu extrahieren oder Prozesse zu kontrollieren.',
-    lat:48, lon:2 },
-  { id:2,  name:'Deepfakes',             team:'BBB',
-    layer:'Social Engineering', cat:'KI-gestützte Täuschung', sev:'🟠 HOCH', proto:'ML/AI',
-    desc:'Einsatz von KI-generierten synthetischen Medien zur Identitätstäuschung. Deepfakes ermöglichen Vishing, CEO-Fraud und gezielte Desinformationskampagnen.',
-    lat:40, lon:-74 },
-  { id:3,  name:'Keylogger',             team:'Zerosec',
-    layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🟠 HOCH', proto:'OS-Kernel',
-    desc:'Software- oder Hardware-basierte Aufzeichnung von Tastatureingaben. Keylogger operieren häufig auf Kernel-Ebene und exfiltrieren Passwörter und vertrauliche Informationen.',
-    lat:55, lon:37 },
-  { id:4,  name:'RIP Spoofing',          team:'Zerosec',
-    layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🟡 MITTEL', proto:'RIPv1/v2',
-    desc:'Einspeisung gefälschter RIP-Updates in ein Netzwerk, um Routing-Tabellen zu verfälschen. Ermöglicht Man-in-the-Middle-Angriffe und Denial-of-Service.',
-    lat:35, lon:139 },
-  { id:5,  name:'Scareware',             team:'Matryoshka',
-    layer:'Layer 7 – Application', cat:'Social Engineering', sev:'🟡 MITTEL', proto:'HTTP/Browser',
-    desc:'Täuschende Sicherheitswarnungen verleiten Nutzer zur Installation von Malware. Manipulation durch Angst und künstliche Dringlichkeit.',
-    lat:19, lon:-99 },
-  { id:6,  name:'STP Root Bridge',       team:'Matryoshka',
-    layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'STP / 802.1D',
-    desc:'Gefälschte BPDU-Pakete mit niedriger Bridge-ID übernehmen die Root-Bridge-Rolle. Ermöglicht vollständiges Mitsniffen des Ethernet-Traffics im LAN-Segment.',
-    lat:-34, lon:151 },
-  { id:7,  name:'SIP Reg. Hijacking',    team:'Matryoshka',
-    layer:'Layer 5–7', cat:'VoIP Attack', sev:'🔴 KRITISCH', proto:'SIP / UDP',
-    desc:'Übernahme einer SIP-Registrierung durch Replay- oder Brute-Force-Angriffe. Ermöglicht unautorisierte VoIP-Nutzung, Gesprächsabhoraktion und Gebührenbetrug.',
-    lat:1, lon:103 },
-  { id:8,  name:'Evil Twin Attack',      team:'Matryoshka',
-    layer:'Layer 1–2', cat:'WLAN Attack', sev:'🔴 KRITISCH', proto:'IEEE 802.11',
-    desc:'Bösartiger Access Point mit identischer SSID wie ein legitimes Netzwerk. Clients verbinden sich automatisch und der gesamte Datenverkehr wird über den Angreifer geleitet.',
-    lat:-23, lon:-46 },
-  { id:9,  name:'Padding-Oracle AES-CBC',team:'Matryoshka',
-    layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🔴 KRITISCH', proto:'AES-CBC',
-    desc:'Ausnutzung von Padding-Validierungsfehlern in CBC-verschlüsselten Nachrichten. Der Klartext kann Byte-für-Byte durch wiederholtes Senden manipulierter Blöcke entschlüsselt werden.',
-    lat:48, lon:16 },
-  // ── Beispiele ────────────────────────────────────────────────────────────
-  { id:10, name:'SQL Injection',         team:'Beispiele',
-    layer:'Layer 7 – Application', cat:'Web Attack', sev:'🔴 KRITISCH', proto:'HTTP/SQL',
-    desc:'Einschleusen von SQL-Code in Datenbankabfragen über unzureichend validierte Eingabefelder. Ermöglicht Datenbankzugriff, Datenexfiltration und vollständige Systemkompromittierung.',
-    lat:37, lon:-122 },
-  { id:11, name:'DDoS – Amplification',  team:'Beispiele',
-    layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🔴 KRITISCH', proto:'UDP/DNS',
-    desc:'Missbrauch von Reflection-Diensten (DNS, NTP, SSDP) zur Verstärkung von Angriffstraffic. Faktor bis zu 10.000× Amplification führt zu Bandbreitenüberflutung beim Ziel.',
-    lat:22, lon:114 },
-  { id:12, name:'Pass-the-Hash',         team:'Beispiele',
-    layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟠 HOCH', proto:'NTLM / SMB',
-    desc:'Nutzung eines erbeuteten NTLM-Passwort-Hashes zur Authentifizierung ohne Kenntnis des Klartextpassworts. Weit verbreitet in lateralen Bewegungen in Active-Directory-Umgebungen.',
-    lat:51, lon:-0.1 },
-  { id:13, name:'ARP Spoofing',          team:'Beispiele',
-    layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'ARP',
-    desc:'Versenden gefälschter ARP-Antworten, um die ARP-Tabellen im LAN zu vergiften. Leitet Traffic auf den Angreifer um und ermöglicht Man-in-the-Middle sowie Session-Hijacking.',
-    lat:28, lon:77 },
-  { id:14, name:'Privilege Escalation',  team:'Beispiele',
-    layer:'Layer 7 / OS', cat:'Privilege Escalation', sev:'🔴 KRITISCH', proto:'OS / Kernel',
-    desc:'Ausnutzung von Schwachstellen oder Fehlkonfigurationen, um von niedrigen Benutzerrechten auf Systemrechte zu eskalieren. Typischer Schritt nach erstem Zugriff in der Kill Chain.',
-    lat:-26, lon:28 },
+function getCatEmoji(cat){
+  const m={
+    'Routing Attack':'⇄','Code Injection':'⌥','KI-gestützte Täuschung':'◈',
+    'Spyware / Malware':'⚠','Social Engineering':'◉','Network Manipulation':'⬡',
+    'VoIP Attack':'☎','WLAN Attack':'⌁','Kryptografischer Angriff':'⚿',
+    'DoS/DDoS':'⚡','Web Attack':'⬡','Exploitation':'⚔','Privilege Escalation':'▲',
+    'IoT Attack':'📡','Password Attack':'🔑','Forensik & Analyse':'🔍',
+    'Steganographie':'🖼','Physischer Angriff':'🛰','Side-Channel':'📈','Sonstiges':'🔒',
+  };
+  return m[cat]||'●';
+}
+
+// ─── ANGRIFFSDATEN (aus assets/da.txt) ─────────────────────────────────────
+// showcase:true markiert das einzige Thema einer fremden DA, das standardmäßig
+// (ohne aktiven Filter) zusätzlich zu allen Matryoshka-Themen sichtbar ist.
+const ATTACKS_RAW = [
+  // ── Matryoshka — alle Themen immer sichtbar ─────────────────────────────
+  { name:'Netzwerkangriff durch einen Wurm', team:'Matryoshka', layer:'Layer 3–7', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'TCP/IP',
+    desc:'Selbstverbreitende Schadsoftware, die sich eigenständig über Netzwerkschwachstellen von System zu System ausbreitet.' },
+  { name:'Dateiverschlüsselung durch Ransomware', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'Dateisystem',
+    desc:'Verschlüsselung lokaler und freigegebener Dateien durch Schadsoftware mit anschließender Lösegeldforderung.' },
+  { name:'Schadsoftware-Einschleusung via Trojaner', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'Dropper',
+    desc:'Tarnung von Schadcode als nützliche Anwendung, um ihn unbemerkt auf dem Zielsystem auszuführen.' },
+  { name:'Manipulation durch Scareware', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Social Engineering', sev:'🟡 MITTEL', proto:'HTTP/Browser',
+    desc:'Täuschende Sicherheitswarnungen verleiten Nutzer zur Installation von Malware. Manipulation durch Angst und künstliche Dringlichkeit.' },
+  { name:'STP Manipulation durch Root Bridge Attack', team:'Matryoshka', layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'STP / 802.1D',
+    desc:'Gefälschte BPDU-Pakete mit niedriger Bridge-ID übernehmen die Root-Bridge-Rolle. Ermöglicht vollständiges Mitsniffen des Ethernet-Traffics im LAN-Segment.' },
+  { name:'ICMP Redirect', team:'Matryoshka', layer:'Layer 3 – Network', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'ICMP',
+    desc:'Versenden gefälschter ICMP-Redirect-Nachrichten, um Opfer dazu zu bringen, Datenverkehr über ein vom Angreifer kontrolliertes Gateway zu leiten.' },
+  { name:'Firewall State Table Exhaustion', team:'Matryoshka', layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🟠 HOCH', proto:'TCP/UDP',
+    desc:'Überlastung der Zustandstabelle einer Stateful Firewall durch massenhafte Verbindungen, bis legitimer Verkehr nicht mehr verarbeitet wird.' },
+  { name:'DNS-Spoofing Angriff', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'DNS/UDP',
+    desc:'Fälschen von DNS-Antworten, um Nutzer unbemerkt auf bösartige Server statt der angeforderten Adresse zu leiten.' },
+  { name:'Passives Abhören via SPAN-Port', team:'Matryoshka', layer:'Layer 2', cat:'Forensik & Analyse', sev:'🟡 MITTEL', proto:'SPAN/Mirror',
+    desc:'Missbrauch eines gespiegelten Switch-Ports, um unbemerkt den gesamten Netzwerkverkehr eines Segments mitzuschneiden.' },
+  { name:'SIP Registration Hijacking', team:'Matryoshka', layer:'Layer 5–7', cat:'VoIP Attack', sev:'🔴 KRITISCH', proto:'SIP / UDP',
+    desc:'Übernahme einer SIP-Registrierung durch Replay- oder Brute-Force-Angriffe. Ermöglicht unautorisierte VoIP-Nutzung, Gesprächsabhoraktion und Gebührenbetrug.' },
+  { name:'SIP INVITE-Flooding DoS', team:'Matryoshka', layer:'Layer 5–7', cat:'VoIP Attack', sev:'🟠 HOCH', proto:'SIP/UDP',
+    desc:'Überflutung eines SIP-Servers mit massenhaften INVITE-Anfragen, um die VoIP-Infrastruktur lahmzulegen.' },
+  { name:'SIP Extension Scanning', team:'Matryoshka', layer:'Layer 5–7', cat:'VoIP Attack', sev:'🟡 MITTEL', proto:'SIP/UDP',
+    desc:'Systematisches Durchprobieren von SIP-Nebenstellen, um gültige Teilnehmer für weiterführende Angriffe zu identifizieren.' },
+  { name:'Evil Twin Attack', team:'Matryoshka', layer:'Layer 1–2', cat:'WLAN Attack', sev:'🔴 KRITISCH', proto:'IEEE 802.11',
+    desc:'Bösartiger Access Point mit identischer SSID wie ein legitimes Netzwerk. Clients verbinden sich automatisch und der gesamte Datenverkehr wird über den Angreifer geleitet.' },
+  { name:'Replay Attack', team:'Matryoshka', layer:'Layer 4–7', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'Diverse',
+    desc:'Erneutes Einspielen zuvor aufgezeichneter, gültiger Datenpakete, um Authentifizierungen oder Transaktionen unautorisiert zu wiederholen.' },
+  { name:'PMKID Attack', team:'Matryoshka', layer:'Layer 1–2', cat:'WLAN Attack', sev:'🟠 HOCH', proto:'IEEE 802.11 / WPA2',
+    desc:'Offline-Angriff auf WPA2-Passwörter durch Auslesen des PMKID-Werts, ohne dass ein vollständiger 4-Way-Handshake nötig ist.' },
+  { name:'BlueSnarfing', team:'Matryoshka', layer:'Layer 1–2', cat:'Physischer Angriff', sev:'🟠 HOCH', proto:'Bluetooth OBEX',
+    desc:'Unautorisierter Zugriff auf Daten eines Bluetooth-Geräts über Schwachstellen im OBEX-Protokoll ohne Kopplung des Angreifers.' },
+  { name:'TLS-Downgrade-Angriff', team:'Matryoshka', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🔴 KRITISCH', proto:'TLS',
+    desc:'Erzwingen einer schwächeren, veralteten TLS-Version oder Cipher-Suite, um die Verschlüsselung einer Verbindung angreifbar zu machen.' },
+  { name:'Rogue-CA / Zertifikatsfälschung', team:'Matryoshka', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🔴 KRITISCH', proto:'X.509/PKI',
+    desc:'Ausstellen gefälschter, scheinbar vertrauenswürdiger Zertifikate über eine kompromittierte oder untergeschobene Zertifizierungsstelle.' },
+  { name:'Padding-Oracle-Angriff auf AES-CBC', team:'Matryoshka', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🔴 KRITISCH', proto:'AES-CBC',
+    desc:'Ausnutzung von Padding-Validierungsfehlern in CBC-verschlüsselten Nachrichten. Der Klartext kann Byte-für-Byte durch wiederholtes Senden manipulierter Blöcke entschlüsselt werden.' },
+  { name:'Timing-Side-Channel-Angriff auf Authentifizierung', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Side-Channel', sev:'🟠 HOCH', proto:'HTTP/Auth',
+    desc:'Ableitung geheimer Informationen aus minimalen Laufzeitunterschieden einer Authentifizierungsroutine.' },
+  { name:'TEMPEST-Angriff', team:'Matryoshka', layer:'Layer 1 / Physisch', cat:'Physischer Angriff', sev:'🟡 MITTEL', proto:'Elektromagnetisch',
+    desc:'Abhören kompromittierender elektromagnetischer Abstrahlung von Geräten, um verarbeitete Daten aus der Ferne zu rekonstruieren.' },
+  { name:'WPA3 Dragonblood Attack', team:'Matryoshka', layer:'Layer 1–2', cat:'WLAN Attack', sev:'🔴 KRITISCH', proto:'IEEE 802.11 / WPA3',
+    desc:'Ausnutzung von Seitenkanal- und Downgrade-Schwachstellen im SAE-Handshake von WPA3 zur Wiederherstellung des Passworts.' },
+  { name:'DNS-Spoofing mit Phishing und MITM-Komponenten', team:'Matryoshka', layer:'Layer 7 – Application', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'DNS/HTTP',
+    desc:'Kombinierter Angriff aus DNS-Spoofing, Phishing-Inhalten und Man-in-the-Middle, um Zugangsdaten vollautomatisiert abzugreifen.' },
+
+  // ── Kobayashi-Maru ───────────────────────────────────────────────────────
+  { name:'BGP Hijacking', team:'Kobayashi-Maru', layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🔴 KRITISCH', proto:'BGP', showcase:true,
+    desc:'Manipulation von BGP-Routing-Tabellen, um Netzwerkverkehr umzuleiten oder abzufangen. Angreifer kündigen fremde IP-Präfixe an und übernehmen so den Datenfluss ganzer Netzwerksegmente.' },
+  { name:'Geheim', team:'Kobayashi-Maru', layer:'Vertraulich', cat:'Sonstiges', sev:'⚪ VERTRAULICH', proto:'—',
+    desc:'Thema ist im Rahmen der Diplomarbeit als vertraulich eingestuft und wird hier nicht im Detail veröffentlicht.' },
+  { name:'IoT', team:'Kobayashi-Maru', layer:'Layer 7 / Embedded', cat:'IoT Attack', sev:'🟠 HOCH', proto:'MQTT/CoAP',
+    desc:'Ausnutzung unsicherer Standardkonfigurationen und ungepatchter Firmware vernetzter Geräte, um Zugriff auf IoT-Infrastrukturen zu erlangen.' },
+  { name:'Lizenzierungsverfahren', team:'Kobayashi-Maru', layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟡 MITTEL', proto:'Software-Lizenz',
+    desc:'Analyse und Umgehung von Software-Lizenzprüfungen, etwa durch Reverse Engineering von Aktivierungsmechanismen.' },
+  { name:'Log Analysis', team:'Kobayashi-Maru', layer:'Layer 7 / Forensik', cat:'Forensik & Analyse', sev:'🟢 NIEDRIG', proto:'Syslog',
+    desc:'Systematische Auswertung von Server- und Systemprotokollen zur Erkennung von Angriffsspuren und Anomalien.' },
+  { name:'Memory Analysis', team:'Kobayashi-Maru', layer:'OS / RAM', cat:'Forensik & Analyse', sev:'🟡 MITTEL', proto:'RAM-Dump',
+    desc:'Forensische Untersuchung von Arbeitsspeicher-Abbildern, um flüchtige Spuren von Malware und Angreiferaktivität zu rekonstruieren.' },
+  { name:'Man-in-the-Middle (MiTM)', team:'Kobayashi-Maru', layer:'Layer 2–3', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'ARP/TCP',
+    desc:'Unbemerktes Einschleusen in die Kommunikation zweier Parteien, um Datenverkehr mitzulesen oder zu manipulieren.' },
+  { name:'Network Analysis', team:'Kobayashi-Maru', layer:'Layer 2–4', cat:'Forensik & Analyse', sev:'🟢 NIEDRIG', proto:'PCAP',
+    desc:'Aufzeichnung und Auswertung von Netzwerkverkehr zur Identifikation von Schwachstellen und verdächtigem Verhalten.' },
+  { name:'Network Sniffing', team:'Kobayashi-Maru', layer:'Layer 2', cat:'Forensik & Analyse', sev:'🟡 MITTEL', proto:'Promiscuous Mode',
+    desc:'Passives Mitschneiden des Datenverkehrs in einem Netzwerksegment, häufig zur Erbeutung unverschlüsselter Zugangsdaten.' },
+  { name:'Pass-the-Hash', team:'Kobayashi-Maru', layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟠 HOCH', proto:'NTLM / SMB',
+    desc:'Nutzung eines erbeuteten NTLM-Passwort-Hashes zur Authentifizierung ohne Kenntnis des Klartextpassworts. Weit verbreitet bei lateraler Bewegung in Active-Directory-Umgebungen.' },
+  { name:'SQL Injection', team:'Kobayashi-Maru', layer:'Layer 7 – Application', cat:'Web Attack', sev:'🔴 KRITISCH', proto:'HTTP/SQL',
+    desc:'Einschleusen von SQL-Code in Datenbankabfragen über unzureichend validierte Eingabefelder. Ermöglicht Datenbankzugriff, Datenexfiltration und vollständige Systemkompromittierung.' },
+  { name:'Steganographie', team:'Kobayashi-Maru', layer:'Layer 7 – Application', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Bild/Audio',
+    desc:'Verstecken geheimer Informationen innerhalb unauffälliger Trägerdateien wie Bildern oder Audiodateien.' },
+  { name:'VLAN-Hopping', team:'Kobayashi-Maru', layer:'Layer 2 – Data Link', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'802.1Q',
+    desc:'Überwinden der VLAN-Segmentierung durch Double-Tagging oder Switch-Spoofing, um auf eigentlich isolierte Netzwerksegmente zuzugreifen.' },
+  { name:'Webserver', team:'Kobayashi-Maru', layer:'Layer 7 – Application', cat:'Web Attack', sev:'🟠 HOCH', proto:'HTTP/HTTPS',
+    desc:'Angriffe auf Fehlkonfigurationen und Schwachstellen von Webserver-Software zur Erlangung von Kontrolle über den Host.' },
+
+  // ── Rasputin ──────────────────────────────────────────────────────────────
+  { name:'Birthday Attack', team:'Rasputin', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'Hashfunktionen',
+    desc:'Ausnutzung des Geburtstagsparadoxons, um Hash-Kollisionen schneller als durch Brute-Force zu finden.' },
+  { name:'Birthday Attack Extended', team:'Rasputin', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'Hashfunktionen',
+    desc:'Erweiterte Variante der Geburtstagsattacke mit optimierten Kollisionsstrategien gegen moderne Hashfunktionen.' },
+  { name:'Botnet', team:'Rasputin', layer:'Layer 7 / Netzwerk', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'C2 / IRC',
+    desc:'Fernsteuerung eines Netzwerks kompromittierter Geräte über eine Command-and-Control-Infrastruktur für koordinierte Angriffe.' },
+  { name:'DHCP Starvation', team:'Rasputin', layer:'Layer 2–3', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'DHCP',
+    desc:'Erschöpfung des DHCP-Adresspools durch massenhafte gefälschte Anfragen, um neue Clients lahmzulegen oder umzuleiten.' },
+  { name:'DNS Cache Poisoning', team:'Rasputin', layer:'Layer 7 – Application', cat:'Network Manipulation', sev:'🔴 KRITISCH', proto:'DNS/UDP', showcase:true,
+    desc:'Einschleusen gefälschter DNS-Antworten in den Cache eines Resolvers, um Nutzer unbemerkt auf bösartige Server umzuleiten.' },
+  { name:'DNS Flood', team:'Rasputin', layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🟠 HOCH', proto:'DNS/UDP',
+    desc:'Überlastung eines DNS-Servers durch massenhafte Anfragen, bis legitime Namensauflösungen nicht mehr bearbeitet werden können.' },
+  { name:'DNS Volumetric', team:'Rasputin', layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🔴 KRITISCH', proto:'DNS/UDP',
+    desc:'Volumenbasierter Angriff über DNS-Infrastruktur, der die verfügbare Bandbreite des Ziels vollständig auslastet.' },
+  { name:'DSA', team:'Rasputin', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'DSA',
+    desc:'Untersuchung von Implementierungsschwächen des Digital Signature Algorithm, etwa bei wiederverwendeten Zufallswerten.' },
+  { name:'E-Mail-Spoofing', team:'Rasputin', layer:'Layer 7 – Application', cat:'Social Engineering', sev:'🟠 HOCH', proto:'SMTP',
+    desc:'Fälschen der Absenderadresse einer E-Mail, um Vertrauen vorzutäuschen und Empfänger zu täuschen.' },
+  { name:'Homophone-Chiffre', team:'Rasputin', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟢 NIEDRIG', proto:'Klassische Kryptografie',
+    desc:'Kryptoanalyse einer homophonen Chiffre, bei der mehrere Geheimtextzeichen für denselben Klartextbuchstaben stehen.' },
+  { name:'Passwort-Cracking', team:'Rasputin', layer:'Layer 7 – Application', cat:'Password Attack', sev:'🟠 HOCH', proto:'Hash/Brute-Force',
+    desc:'Systematisches Erraten oder Berechnen von Passwörtern aus gestohlenen Hashwerten mittels Wörterbuch- oder Brute-Force-Methoden.' },
+  { name:'Phishing', team:'Rasputin', layer:'Social Engineering', cat:'Social Engineering', sev:'🟠 HOCH', proto:'E-Mail/HTTP',
+    desc:'Versand gefälschter Nachrichten, die Empfänger zur Preisgabe von Zugangsdaten oder zur Ausführung von Schadcode verleiten.' },
+  { name:'Ping Flood', team:'Rasputin', layer:'Layer 3 – Network', cat:'DoS/DDoS', sev:'🟡 MITTEL', proto:'ICMP',
+    desc:'Überflutung eines Ziels mit ICMP-Echo-Requests, um dessen Netzwerkanbindung oder Rechenleistung zu erschöpfen.' },
+  { name:'Reconnaissance', team:'Rasputin', layer:'Vorbereitung', cat:'Forensik & Analyse', sev:'🟢 NIEDRIG', proto:'Diverse',
+    desc:'Systematisches Sammeln öffentlich verfügbarer Informationen über ein Ziel als Vorbereitung für weiterführende Angriffe.' },
+  { name:'Rogue DHCP', team:'Rasputin', layer:'Layer 2–3', cat:'Network Manipulation', sev:'🟠 HOCH', proto:'DHCP',
+    desc:'Betrieb eines nicht autorisierten DHCP-Servers, um Clients falsche Netzwerkeinstellungen und Gateways unterzuschieben.' },
+  { name:'RSA', team:'Rasputin', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'RSA',
+    desc:'Analyse von Schwachstellen bei fehlerhafter RSA-Schlüsselerzeugung, etwa durch gemeinsame Primfaktoren oder zu kleine Moduli.' },
+  { name:'Spear-Phishing', team:'Rasputin', layer:'Social Engineering', cat:'Social Engineering', sev:'🟠 HOCH', proto:'E-Mail',
+    desc:'Gezielte, individuell zugeschnittene Phishing-Angriffe auf ausgewählte Personen oder Organisationen.' },
+  { name:'Steganografie Audio', team:'Rasputin', layer:'Layer 7 – Application', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Audio',
+    desc:'Verstecken geheimer Daten in Audiodateien durch minimale, für das menschliche Gehör nicht wahrnehmbare Veränderungen.' },
+  { name:'Steganografie Video', team:'Rasputin', layer:'Layer 7 – Application', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Video',
+    desc:'Einbetten verdeckter Informationen in Videodateien, verteilt über einzelne Frames oder Kompressionsdaten.' },
+  { name:'TCP SYN Flood', team:'Rasputin', layer:'Layer 4 – Transport', cat:'DoS/DDoS', sev:'🔴 KRITISCH', proto:'TCP',
+    desc:'Überflutung eines Servers mit halboffenen TCP-Verbindungen, um dessen Verbindungs-Backlog zu erschöpfen.' },
+
+  // ── BBB ───────────────────────────────────────────────────────────────────
+  { name:'2FA-Bypass', team:'BBB', layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟠 HOCH', proto:'OTP/OAuth',
+    desc:'Umgehung der Zwei-Faktor-Authentifizierung, etwa durch Session-Hijacking, Social Engineering oder Schwächen im Fallback-Mechanismus.' },
+  { name:'API Hooking', team:'BBB', layer:'Layer 7 – Application', cat:'Code Injection', sev:'🟠 HOCH', proto:'Win32 API', showcase:true,
+    desc:'Abfangen und Umleiten von API-Aufrufen im Betriebssystem. Durch IAT-Patching oder Inline-Hooks werden Systemfunktionen manipuliert, um Daten zu extrahieren oder Prozesse zu kontrollieren.' },
+  { name:'Deepfakes', team:'BBB', layer:'Social Engineering', cat:'KI-gestützte Täuschung', sev:'🟠 HOCH', proto:'ML/AI',
+    desc:'Einsatz von KI-generierten synthetischen Medien zur Identitätstäuschung. Deepfakes ermöglichen Vishing, CEO-Fraud und gezielte Desinformationskampagnen.' },
+  { name:'Dictionary Attack', team:'BBB', layer:'Layer 7 – Application', cat:'Password Attack', sev:'🟡 MITTEL', proto:'Hash/Wordlist',
+    desc:'Passwort-Erraten mittels vorab erstellter Wortlisten häufig verwendeter Begriffe und bekannter Passwörter.' },
+  { name:'DLL-Hijacking', team:'BBB', layer:'OS / Windows', cat:'Exploitation', sev:'🟠 HOCH', proto:'Win32 DLL',
+    desc:'Platzieren einer bösartigen DLL an einem Ort, der vom Suchpfad einer Anwendung bevorzugt geladen wird, um eigenen Code auszuführen.' },
+  { name:'Flipper', team:'BBB', layer:'Layer 1 / Physisch', cat:'Physischer Angriff', sev:'🟠 HOCH', proto:'RFID/Sub-GHz',
+    desc:'Einsatz eines Flipper-Zero-Geräts zum Auslesen, Klonen oder Stören von RFID-, NFC- und Funksignalen.' },
+  { name:'Metadatenmanipulation', team:'BBB', layer:'Layer 7 – Application', cat:'Forensik & Analyse', sev:'🟡 MITTEL', proto:'EXIF/Dateisystem',
+    desc:'Verändern oder Entfernen von Datei-Metadaten, um Herkunft, Zeitstempel oder Urheberschaft zu verschleiern.' },
+  { name:'Netzwerkforensik', team:'BBB', layer:'Layer 2–4', cat:'Forensik & Analyse', sev:'🟢 NIEDRIG', proto:'PCAP',
+    desc:'Rekonstruktion von Angriffsverläufen durch detaillierte Analyse aufgezeichneten Netzwerkverkehrs.' },
+  { name:'PHI', team:'BBB', layer:'Layer 7 – Application', cat:'Exploitation', sev:'🟠 HOCH', proto:'Daten-Exfiltration',
+    desc:'Angriffe mit dem Ziel, besonders schützenswerte personenbezogene Gesundheitsdaten (Protected Health Information) zu entwenden.' },
+  { name:'Phishing', team:'BBB', layer:'Social Engineering', cat:'Social Engineering', sev:'🟠 HOCH', proto:'E-Mail/HTTP',
+    desc:'Versand gefälschter Nachrichten, die Empfänger zur Preisgabe von Zugangsdaten oder zur Ausführung von Schadcode verleiten.' },
+  { name:'Ransomware', team:'BBB', layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'Dateisystem',
+    desc:'Verschlüsselung von Nutzerdaten durch Schadsoftware mit anschließender Lösegeldforderung für die Wiederherstellung.' },
+  { name:'RAT-Trojaner', team:'BBB', layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🔴 KRITISCH', proto:'C2',
+    desc:'Schadsoftware, die einem Angreifer dauerhaften Fernzugriff und volle Kontrolle über ein infiziertes System gewährt.' },
+
+  // ── Zerosec ───────────────────────────────────────────────────────────────
+  { name:'EternalBlue', team:'Zerosec', layer:'Layer 7 / OS', cat:'Exploitation', sev:'🔴 KRITISCH', proto:'SMBv1',
+    desc:'Ausnutzung einer kritischen Schwachstelle im SMBv1-Protokoll zur Remotecode-Ausführung, bekannt aus WannaCry und NotPetya.' },
+  { name:'Local File Inclusion (LFI)', team:'Zerosec', layer:'Layer 7 – Application', cat:'Web Attack', sev:'🟠 HOCH', proto:'HTTP',
+    desc:'Einschleusen von Pfadangaben in Webanwendungen, um beliebige lokale Dateien des Servers einzubinden und auszuführen.' },
+  { name:'Festplattenanalyse', team:'Zerosec', layer:'OS / Storage', cat:'Forensik & Analyse', sev:'🟢 NIEDRIG', proto:'Disk Image',
+    desc:'Forensische Untersuchung von Datenträger-Abbildern zur Rekonstruktion gelöschter oder versteckter Daten.' },
+  { name:'Golden Ticket', team:'Zerosec', layer:'Layer 7 / Active Directory', cat:'Privilege Escalation', sev:'🔴 KRITISCH', proto:'Kerberos',
+    desc:'Fälschung eines Kerberos-Ticket-Granting-Tickets mittels gestohlenem KRBTGT-Hash für uneingeschränkten Domänenzugriff.' },
+  { name:'Keylogger', team:'Zerosec', layer:'Layer 7 – Application', cat:'Spyware / Malware', sev:'🟠 HOCH', proto:'OS-Kernel', showcase:true,
+    desc:'Software- oder Hardware-basierte Aufzeichnung von Tastatureingaben. Keylogger operieren häufig auf Kernel-Ebene und exfiltrieren Passwörter und vertrauliche Informationen.' },
+  { name:'Vigenère-Verschlüsselung', team:'Zerosec', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟢 NIEDRIG', proto:'Klassische Kryptografie',
+    desc:'Kryptoanalyse der polyalphabetischen Vigenère-Chiffre mittels Kasiski-Methode oder Friedman-Test zur Schlüssellängenbestimmung.' },
+  { name:'LOG4J', team:'Zerosec', layer:'Layer 7 – Application', cat:'Code Injection', sev:'🔴 KRITISCH', proto:'JNDI/LDAP',
+    desc:'Ausnutzung der Log4Shell-Schwachstelle, bei der manipulierte Log-Einträge über JNDI-Lookups Remotecode-Ausführung ermöglichen.' },
+  { name:'Morris DOS', team:'Zerosec', layer:'Layer 3–4', cat:'DoS/DDoS', sev:'🟠 HOCH', proto:'TCP/IP',
+    desc:'Historisch inspirierter, sich selbst replizierender Angriff, der Systemressourcen durch unkontrollierte Ausbreitung erschöpft.' },
+  { name:'Ping of Flood', team:'Zerosec', layer:'Layer 3 – Network', cat:'DoS/DDoS', sev:'🟡 MITTEL', proto:'ICMP',
+    desc:'Überlastung eines Zielsystems durch eine große Menge übergroßer oder häufiger ICMP-Pakete.' },
+  { name:'RIP Spoofing', team:'Zerosec', layer:'Layer 3 – Network', cat:'Routing Attack', sev:'🟡 MITTEL', proto:'RIPv1/v2',
+    desc:'Einspeisung gefälschter RIP-Updates in ein Netzwerk, um Routing-Tabellen zu verfälschen. Ermöglicht Man-in-the-Middle-Angriffe und Denial-of-Service.' },
+  { name:'Steganographie – Affine Chiffre', team:'Zerosec', layer:'Layer 6 – Presentation', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Klassische Kryptografie',
+    desc:'Kombination aus affiner Verschlüsselung und Steganographie zum doppelt abgesicherten Verstecken von Nachrichten.' },
+  { name:'Steganographie – Bacon Chiffre', team:'Zerosec', layer:'Layer 6 – Presentation', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Klassische Kryptografie',
+    desc:'Verstecken von Botschaften mittels der Bacon-Chiffre, die Buchstaben durch binäre Muster in Formatierungsmerkmalen codiert.' },
+  { name:'Steganographie – Bilddateien', team:'Zerosec', layer:'Layer 7 – Application', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Bilddateien',
+    desc:'Einbetten geheimer Informationen in den niederwertigen Bits von Bilddateien (LSB-Steganographie).' },
+  { name:'Steganographie – Caesar-Chiffre', team:'Zerosec', layer:'Layer 6 – Presentation', cat:'Steganographie', sev:'🟢 NIEDRIG', proto:'Klassische Kryptografie',
+    desc:'Verstecken und Kryptoanalyse von Nachrichten, die mit der einfachen Caesar-Verschiebechiffre codiert wurden.' },
+  { name:'WLAN Brute-Force', team:'Zerosec', layer:'Layer 1–2', cat:'WLAN Attack', sev:'🟠 HOCH', proto:'IEEE 802.11 / WPA2',
+    desc:'Systematisches Durchprobieren von Passwörtern gegen einen abgefangenen WPA2-Handshake zur Wiederherstellung des WLAN-Schlüssels.' },
+  { name:'Datenträgerverschlüsselung', team:'Zerosec', layer:'OS / Storage', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'AES/BitLocker',
+    desc:'Analyse von Stärken und Schwächen gängiger Verfahren zur vollständigen Verschlüsselung von Datenträgern.' },
+  { name:'Moderne Kryptographie', team:'Zerosec', layer:'Layer 6 – Presentation', cat:'Kryptografischer Angriff', sev:'🟡 MITTEL', proto:'AES/RSA/ECC',
+    desc:'Untersuchung aktueller symmetrischer und asymmetrischer Verschlüsselungsverfahren und ihrer bekannten Angriffsflächen.' },
 ];
+
+// Gleichmäßige Verteilung der Knoten auf der Kugel (Fibonacci-Sphere),
+// damit die Weltkarte unabhängig von der Themenanzahl aufgeräumt aussieht.
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+function sphereLatLon(i, total){
+  const y = (1 - (i/(total-1))*2) * 0.82;
+  const radius = Math.sqrt(Math.max(0, 1 - y*y));
+  const theta = GOLDEN_ANGLE * i;
+  const x = Math.cos(theta)*radius, z = Math.sin(theta)*radius;
+  return { lat: Math.asin(y)*180/Math.PI, lon: Math.atan2(z,x)*180/Math.PI };
+}
+const ATTACKS = ATTACKS_RAW.map((a,i)=>{
+  const {lat,lon} = sphereLatLon(i, ATTACKS_RAW.length);
+  return Object.assign({ id:i, lat, lon }, a);
+});
+
+// ─── FILTER-STATUS ──────────────────────────────────────────────────────────
+let selectedTeam = null; // null = Standardansicht
+let fourMode = false;    // true = 4 Übungen je DA, unabhängig vom Team-Filter
+
+const FOUR_PER_TEAM = Math.min(4, 4); // Anzahl Themen je DA im "4 je DA"-Modus
+function topFourOfTeam(team){
+  const items=ATTACKS.filter(a=>a.team===team);
+  const showcase=items.filter(a=>a.showcase);
+  const rest=items.filter(a=>!a.showcase);
+  return showcase.concat(rest).slice(0,4);
+}
+
+function isDefaultVisible(atk){ return atk.team==='Matryoshka' || atk.showcase===true; }
+function visibleAttacks(){
+  if(selectedTeam) return ATTACKS.filter(a=>a.team===selectedTeam);
+  if(fourMode) return TEAM_ORDER.flatMap(topFourOfTeam);
+  return ATTACKS.filter(isDefaultVisible);
+}
+
+function buildTeamPanel(){
+  const wrap=document.getElementById('teams');
+  wrap.innerHTML='';
+
+  const fourBtn=document.createElement('button');
+  fourBtn.id='four-mode-btn';
+  fourBtn.className='team-badge mode-badge';
+  fourBtn.innerHTML=`<span class="team-dot" style="background:#e0f4ff"></span><span style="color:#c8e8ff">4 Übungen je DA</span>`;
+  fourBtn.addEventListener('click', toggleFourMode);
+  wrap.appendChild(fourBtn);
+
+  for(const team of TEAM_ORDER){
+    const total=ATTACKS.filter(a=>a.team===team).length;
+    const btn=document.createElement('button');
+    btn.className='team-badge';
+    btn.dataset.team=team;
+    btn.style.color=TEAMS[team].color;
+    btn.innerHTML=`<span class="team-dot" style="background:${TEAMS[team].color}"></span><span style="color:#c8e8ff">${team}</span><span class="team-count">${total}</span>`;
+    btn.addEventListener('click', ()=>toggleTeam(team));
+    wrap.appendChild(btn);
+  }
+  const reset=document.createElement('div');
+  reset.id='filter-reset';
+  reset.innerHTML='✕ FILTER ZURÜCKSETZEN';
+  reset.addEventListener('click', ()=>{ fourMode=false; setTeamFilter(null); });
+  wrap.appendChild(reset);
+}
+
+function toggleTeam(team){ fourMode=false; setTeamFilter(selectedTeam===team ? null : team); }
+function toggleFourMode(){
+  fourMode=!fourMode;
+  selectedTeam=null;
+  closePanel();
+  refreshTeamUI();
+}
+function setTeamFilter(team){
+  selectedTeam=team;
+  closePanel();
+  refreshTeamUI();
+}
+function refreshTeamUI(){
+  document.querySelectorAll('.team-badge[data-team]').forEach(btn=>{
+    const t=btn.dataset.team;
+    btn.classList.toggle('is-active', selectedTeam===t);
+    btn.classList.toggle('is-dimmed', (!!selectedTeam && selectedTeam!==t) || fourMode);
+  });
+  document.getElementById('four-mode-btn').classList.toggle('is-active', fourMode);
+  document.getElementById('four-mode-btn').classList.toggle('is-dimmed', !!selectedTeam);
+  document.getElementById('filter-reset').classList.toggle('visible', !!selectedTeam || fourMode);
+  const list=visibleAttacks();
+  document.getElementById('count-num').textContent=list.length;
+  document.getElementById('count-label').textContent = selectedTeam
+    ? selectedTeam.toUpperCase()+' · THEMEN'
+    : fourMode ? '4 THEMEN JE DA' : 'ATTACK SCENARIOS';
+  const countBox=document.querySelector('.count-box');
+  const col = selectedTeam ? TEAMS[selectedTeam].color : '#00c8ff';
+  countBox.style.borderColor = selectedTeam ? col+'80' : 'rgba(0,200,255,0.25)';
+  document.getElementById('count-num').style.color = col;
+}
+buildTeamPanel();
+refreshTeamUI();
 
 // ─── CANVAS SETUP ─────────────────────────────────────────────────────────
 const canvas = document.getElementById('globe');
@@ -281,27 +545,78 @@ for(let l=-80;l<=80;l+=20) GRID_LATS.push(l);
 for(let l=-180;l<180;l+=20) GRID_LONS.push(l);
 
 // ── Continent outlines (simplified polygons) ────────────────────────────
-// [lat, lon] pairs, null = pen up
-const CONTINENTS = [
-  // Europe
-  [[71,28],[70,18],[68,14],[65,14],[63,5],[58,5],[58,8],[55,8],[55,10],[54,10],[54,12],[56,10],[58,11],[60,5],[62,5],[63,10],[65,14],[70,25],[71,28]],
-  [[48,17],[50,14],[51,14],[52,20],[53,24],[54,24],[56,21],[57,22],[58,25],[59,28],[60,30],[59,28],[57,22],[55,18],[55,14],[54,10],[54,8],[55,8],[57,8],[59,5],[60,5],[58,11],[56,10],[54,12],[54,10],[53,8],[52,8],[51,4],[51,3],[50,3],[48,0],[46,2],[44,8],[44,10],[46,12],[46,14],[47,18],[48,17]],
-  // Scandinavia
-  [[57,8],[58,5],[60,5],[62,5],[63,10],[65,14],[68,14],[70,18],[71,28],[69,28],[65,25],[63,20],[61,20],[60,25],[58,25],[57,22],[55,18],[55,14],[54,10],[54,12],[56,10],[57,8]],
-  // Africa
-  [[-34,18],[-28,32],[-18,36],[-10,40],[0,42],[10,45],[12,44],[12,42],[15,40],[20,38],[22,38],[26,35],[30,32],[32,32],[34,28],[35,24],[37,15],[37,10],[34,10],[30,10],[20,14],[14,16],[10,16],[6,2],[4,2],[4,8],[0,10],[-5,12],[-10,14],[-18,12],[-28,16],[-34,18]],
-  // North America
-  [[72,-140],[70,-130],[68,-130],[66,-120],[60,-140],[55,-130],[50,-125],[48,-122],[46,-122],[44,-120],[40,-124],[36,-122],[32,-117],[28,-112],[24,-110],[20,-104],[18,-96],[16,-90],[18,-88],[20,-87],[22,-85],[24,-82],[26,-80],[30,-80],[32,-80],[36,-76],[38,-75],[40,-74],[42,-70],[44,-68],[46,-65],[47,-54],[52,-56],[54,-58],[56,-60],[58,-64],[60,-64],[62,-68],[64,-66],[66,-62],[68,-60],[70,-58],[72,-60],[76,-70],[78,-72],[80,-76],[82,-82],[84,-80],[70,-80],[66,-80],[66,-70],[64,-72],[62,-76],[60,-76],[58,-80],[56,-80],[54,-80],[52,-82],[50,-80],[50,-90],[52,-96],[54,-100],[56,-108],[58,-110],[60,-120],[62,-130],[64,-134],[66,-138],[68,-140],[70,-140],[72,-140]],
-  // South America
-  [[10,-62],[8,-60],[8,-63],[6,-65],[4,-68],[0,-70],[-5,-78],[-10,-78],[-15,-75],[-20,-70],[-24,-70],[-28,-70],[-34,-72],[-40,-64],[-44,-66],[-52,-68],[-54,-64],[-56,-66],[-54,-66],[-52,-58],[-50,-52],[-44,-48],[-38,-44],[-28,-48],[-20,-40],[-14,-38],[-8,-34],[-4,-36],[0,-48],[4,-50],[8,-60],[10,-62]],
-  // Asia (simplified)
-  [[72,130],[70,140],[68,140],[66,140],[64,144],[60,140],[56,140],[52,142],[50,140],[46,142],[44,136],[42,130],[40,126],[38,122],[36,120],[32,122],[28,120],[24,118],[20,110],[14,108],[10,108],[6,104],[2,104],[0,104],[-8,116],[0,110],[10,100],[14,100],[16,96],[18,94],[22,92],[26,90],[28,88],[28,84],[28,80],[28,72],[26,66],[24,62],[20,58],[16,54],[14,50],[14,46],[18,42],[22,38],[26,35],[30,32],[32,32],[34,36],[36,36],[38,38],[40,42],[42,48],[44,50],[46,52],[48,58],[50,58],[52,56],[54,52],[56,48],[58,50],[60,60],[62,68],[64,72],[66,68],[68,66],[68,58],[66,52],[64,46],[62,40],[60,38],[60,42],[62,48],[64,54],[66,62],[68,68],[70,72],[72,76],[72,80],[70,80],[68,76],[66,76],[64,80],[62,80],[60,76],[58,76],[56,80],[56,84],[58,90],[60,98],[62,108],[64,118],[66,126],[68,132],[70,136],[72,130]],
-  // Australia
-  [[-14,132],[-18,122],[-22,114],[-28,114],[-32,116],[-34,118],[-38,140],[-38,148],[-36,150],[-34,151],[-28,154],[-22,150],[-16,146],[-14,136],[-14,132]],
+// Statt echter Erd-Küstenlinien entstehen hier frei erfundene Fantasie-Landmassen:
+// unregelmäßige Blob-Formen aus überlagerten Sinus-Harmonischen, mit festem Seed
+// (damit die Karte bei jedem Laden gleich aussieht, aber nie wie die reale Welt).
+function mulberry32(seed){
+  let t=seed>>>0;
+  return function(){
+    t+=0x6D2B79F5; let x=t;
+    x=Math.imul(x^x>>>15, x|1);
+    x^=x+Math.imul(x^x>>>7, x|61);
+    return ((x^x>>>14)>>>0)/4294967296;
+  };
+}
+function fantasyLandmass(seed, centerLat, centerLon, radiusDeg, irregularity, steps){
+  const rng=mulberry32(seed);
+  // Zufällige Kontrollpunkte rund um den Mittelpunkt, zweifach geglättet,
+  // statt periodischer Sinus-Harmonischer — das vermeidet symmetrische "Blütenblätter"
+  // und ergibt stattdessen unregelmäßige, organische Küstenlinien.
+  const N = 9 + Math.floor(rng()*3); // 9–11 Kontrollpunkte
+  let ctrl = Array.from({length:N}, ()=> 1 + (rng()-0.5)*2*irregularity);
+  for(let pass=0; pass<2; pass++){
+    ctrl = ctrl.map((v,i)=>{
+      const prev=ctrl[(i-1+N)%N], next=ctrl[(i+1)%N];
+      return (prev + v*2 + next) / 4;
+    });
+  }
+  const poly=[];
+  for(let s=0;s<=steps;s++){
+    const t=(s/steps)*N;
+    const i0=Math.floor(t)%N, i1=(i0+1)%N;
+    const f=t-Math.floor(t);
+    const ease=f*f*(3-2*f);
+    const rr=radiusDeg*Math.max(0.35, ctrl[i0]*(1-ease)+ctrl[i1]*ease);
+    const ang=(s/steps)*Math.PI*2;
+    const dLat=rr*Math.cos(ang);
+    const dLon=rr*Math.sin(ang)/Math.max(0.18,Math.cos(centerLat*Math.PI/180));
+    poly.push([centerLat+dLat, centerLon+dLon]);
+  }
+  return poly;
+}
+
+// Dunkle "Schaltkreis-Landmassen" mit Neon-Kanten statt bunter Fantasie-Inseln —
+// passend zum Cybersec-/Hacker-HUD-Look der restlichen Oberfläche.
+const LAND_PALETTE = [
+  { fill0:'rgba(8,38,22,0.82)',  fill1:'rgba(3,16,9,0.85)',  edge:'rgba(57,255,20,0.75)'  }, // Matrix-Grün
+  { fill0:'rgba(6,30,46,0.82)',  fill1:'rgba(2,12,20,0.85)', edge:'rgba(0,200,255,0.8)'   }, // Neon-Cyan
+  { fill0:'rgba(42,8,16,0.82)',  fill1:'rgba(18,3,7,0.85)',  edge:'rgba(255,60,110,0.75)' }, // Alert-Rot
+  { fill0:'rgba(40,30,4,0.82)',  fill1:'rgba(18,13,2,0.85)', edge:'rgba(255,176,32,0.75)' }, // Warn-Amber
+  { fill0:'rgba(26,10,46,0.82)', fill1:'rgba(10,4,20,0.85)', edge:'rgba(139,92,246,0.78)' }, // Electric-Violet
 ];
+
+const CONTINENT_SEEDS = [
+  { seed:101, lat:28,  lon:-55,  r:30, irr:0.55, pal:0 },
+  { seed:202, lat:-18, lon:70,   r:26, irr:0.6,  pal:2 },
+  { seed:303, lat:55,  lon:-140, r:22, irr:0.5,  pal:1 },
+  { seed:404, lat:-48, lon:-10,  r:20, irr:0.65, pal:3 },
+  { seed:505, lat:12,  lon:160,  r:24, irr:0.55, pal:4 },
+  { seed:606, lat:62,  lon:35,   r:18, irr:0.6,  pal:2 },
+  { seed:707, lat:-30, lon:-120, r:16, irr:0.6,  pal:0 },
+  // kleine Inselgruppen
+  { seed:808, lat:5,   lon:-20,  r:7,  irr:0.7,  pal:4 },
+  { seed:909, lat:-60, lon:120,  r:8,  irr:0.7,  pal:1 },
+  { seed:111, lat:38,  lon:95,   r:6,  irr:0.75, pal:3 },
+];
+
+const CONTINENTS = CONTINENT_SEEDS.map(c=>({
+  poly: fantasyLandmass(c.seed, c.lat, c.lon, c.r, c.irr, 48),
+  palette: LAND_PALETTE[c.pal],
+}));
 
 function drawGlobe(){
   const r=R*zoom;
+  const filterCol = selectedTeam ? TEAMS[selectedTeam].color : null;
 
   // Deep space background glow around globe
   const spaceglow = ctx.createRadialGradient(cx,cy,r*0.6, cx,cy,r*2.2);
@@ -310,23 +625,23 @@ function drawGlobe(){
   spaceglow.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=spaceglow; ctx.beginPath(); ctx.arc(cx,cy,r*2.2,0,Math.PI*2); ctx.fill();
 
-  // Atmosphere
-  const atm=ctx.createRadialGradient(cx,cy,r*0.88, cx,cy,r*1.28);
-  atm.addColorStop(0,'rgba(0,100,200,0.22)');
-  atm.addColorStop(0.5,'rgba(0,60,140,0.09)');
+  // Atmosphere — tinted toward the active team color when filtered
+  const atm=ctx.createRadialGradient(cx,cy,r*0.88, cx,cy,r*1.3);
+  atm.addColorStop(0, filterCol ? filterCol+'38' : 'rgba(0,100,200,0.22)');
+  atm.addColorStop(0.5, filterCol ? filterCol+'18' : 'rgba(0,60,140,0.09)');
   atm.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=atm; ctx.beginPath(); ctx.arc(cx,cy,r*1.28,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=atm; ctx.beginPath(); ctx.arc(cx,cy,r*1.3,0,Math.PI*2); ctx.fill();
 
-  // Ocean – rich deep blue with pole variation
+  // Ocean – alienblauer Abgrund statt Erdblau, leicht ins Violette
   const ocean=ctx.createRadialGradient(cx-r*0.25,cy-r*0.25,0, cx,cy,r);
-  ocean.addColorStop(0,'#0d3a6e');
-  ocean.addColorStop(0.5,'#082040');
-  ocean.addColorStop(1,'#030f22');
+  ocean.addColorStop(0,'#1a2f82');
+  ocean.addColorStop(0.45,'#141a52');
+  ocean.addColorStop(1,'#07061c');
   ctx.fillStyle=ocean; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
 
-  // Subtle ocean shimmer
+  // Subtiles Schimmern in HUD-Cyan
   const shimmer=ctx.createRadialGradient(cx-r*0.4,cy-r*0.4,0, cx,cy,r*0.8);
-  shimmer.addColorStop(0,'rgba(0,160,255,0.10)');
+  shimmer.addColorStop(0,'rgba(0,180,255,0.14)');
   shimmer.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=shimmer; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
 
@@ -355,29 +670,56 @@ function drawGlobe(){
     ctx.strokeStyle=lon===0?'rgba(0,200,255,0.18)':'rgba(0,200,255,0.06)'; ctx.stroke();
   }
 
-  // Continents – filled polygons
-  for(const poly of CONTINENTS){
-    // Calculate visibility: draw only front-facing points
+  // Fantasie-Landmassen – eingefärbte Blobs statt echter Erdkontinente
+  for(const {poly, palette} of CONTINENTS){
     ctx.beginPath();
-    let penDown=false;
+    let penDown=false, minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    const pts=[];
     for(const pt of poly){
-      if(pt===null){penDown=false;continue;}
       const p3=rotate3D(latLonTo3D(pt[0],pt[1]));
       const {sx,sy,z}=project(p3);
       if(z<0.02){penDown=false;continue;}
       penDown?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy);
       penDown=true;
+      pts.push(sx,sy);
+      if(sx<minX)minX=sx; if(sx>maxX)maxX=sx; if(sy<minY)minY=sy; if(sy>maxY)maxY=sy;
     }
     ctx.closePath();
-    ctx.fillStyle='rgba(30,100,60,0.55)';
+    if(pts.length>=4){
+      const land=ctx.createLinearGradient(minX,minY,maxX,maxY);
+      land.addColorStop(0,palette.fill0);
+      land.addColorStop(1,palette.fill1);
+      ctx.fillStyle=land;
+    } else {
+      ctx.fillStyle=palette.fill0;
+    }
     ctx.fill();
-    ctx.strokeStyle='rgba(60,180,90,0.35)';
-    ctx.lineWidth=0.8;
+    ctx.strokeStyle=palette.edge;
+    ctx.lineWidth=0.9;
+    ctx.shadowColor=palette.edge; ctx.shadowBlur=4;
     ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // Platinen-Leiterbahnen innerhalb der Landmasse (Cybersec-Look)
+    if(pts.length>=4 && maxX>minX && maxY>minY){
+      ctx.save();
+      ctx.clip();
+      ctx.strokeStyle=palette.edge.replace(/[\d.]+\)$/,'0.3)');
+      ctx.lineWidth=0.6;
+      const cols=4, rowStep=(maxY-minY)/3;
+      for(let i=1;i<cols;i++){
+        const x=minX+(maxX-minX)*(i/cols);
+        ctx.beginPath(); ctx.moveTo(x,minY); ctx.lineTo(x,maxY); ctx.stroke();
+      }
+      for(let y=minY+rowStep; y<maxY; y+=rowStep){
+        ctx.beginPath(); ctx.moveTo(minX,y); ctx.lineTo(maxX,y); ctx.stroke();
+      }
+      ctx.restore();
+    }
   }
 
-  // Polar ice caps
-  for(const poleLat of [75,-75]){
+  // Polare Daten-Cluster — kühles Cyan-Weiß statt Eis
+  for(const poleLat of [78,-78]){
     ctx.beginPath(); let first=true;
     for(let lon=-180;lon<=180;lon+=5){
       const p3=rotate3D(latLonTo3D(poleLat,lon));
@@ -386,26 +728,33 @@ function drawGlobe(){
       first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
     }
     ctx.closePath();
-    ctx.fillStyle='rgba(180,220,255,0.18)';
+    ctx.fillStyle='rgba(180,230,255,0.16)';
     ctx.fill();
   }
 
   // Specular highlight
   const spec=ctx.createRadialGradient(cx-r*0.35,cy-r*0.38,0, cx-r*0.2,cy-r*0.2,r*0.7);
-  spec.addColorStop(0,'rgba(180,230,255,0.16)');
+  spec.addColorStop(0,'rgba(180,230,255,0.18)');
   spec.addColorStop(0.4,'rgba(100,180,255,0.05)');
   spec.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=spec; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
 
+  // Soft vignette toward the rim for more depth
+  const vig=ctx.createRadialGradient(cx,cy,r*0.7, cx,cy,r);
+  vig.addColorStop(0,'rgba(0,0,0,0)');
+  vig.addColorStop(1,'rgba(0,0,0,0.28)');
+  ctx.fillStyle=vig; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+
   ctx.restore();
 
-  // Outer rim glow
+  // Outer rim glow — reacts to the active filter color
   ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
   const rimGrad=ctx.createLinearGradient(cx-r,cy,cx+r,cy);
-  rimGrad.addColorStop(0,'rgba(0,160,255,0.5)');
-  rimGrad.addColorStop(0.5,'rgba(0,220,255,0.2)');
-  rimGrad.addColorStop(1,'rgba(0,120,200,0.5)');
-  ctx.strokeStyle=rimGrad; ctx.lineWidth=2; ctx.stroke();
+  const rc = filterCol || '#00c8ff';
+  rimGrad.addColorStop(0, rc+'80');
+  rimGrad.addColorStop(0.5, rc+'33');
+  rimGrad.addColorStop(1, rc+'80');
+  ctx.strokeStyle=rimGrad; ctx.lineWidth=filterCol?2.6:2; ctx.stroke();
 }
 
 // ── Node drawing helpers ─────────────────────────────────────────────────
@@ -426,8 +775,9 @@ function drawShape(type, x, y, r, ctx){
 }
 
 function drawNodes(){
+  const list=visibleAttacks();
   const nodes2d=[];
-  for(const atk of ATTACKS){
+  for(const atk of list){
     const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
     const {sx,sy,z}=project(p3);
     const visible=z>-0.05;
@@ -457,7 +807,7 @@ function drawNodes(){
     const isHov=hoveredNode===atk.id;
     const baseR=isHov?20:14;
     const pulse=Math.sin(animFrame*0.05+atk.id*1.1)*2.5;
-    const shape=SHAPES[atk.cat]||'diamond';
+    const shape=SHAPES[atk.cat];
 
     ctx.globalAlpha=alpha;
 
@@ -516,18 +866,8 @@ function drawNodes(){
   }
 }
 
-function getCatEmoji(cat){
-  const m={
-    'Routing Attack':'⇄','Code Injection':'⌥','KI-gestützte Täuschung':'◈',
-    'Spyware / Malware':'⚠','Social Engineering':'◉','Network Manipulation':'⬡',
-    'VoIP Attack':'☎','WLAN Attack':'⌁','Kryptografischer Angriff':'⚿',
-    'DoS/DDoS':'⚡','Web Attack':'⬡','Exploitation':'⚔','Privilege Escalation':'▲',
-  };
-  return m[cat]||'●';
-}
-
 function hitTest(mx,my){
-  for(const atk of ATTACKS){
+  for(const atk of visibleAttacks()){
     const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
     const {sx,sy,z}=project(p3);
     if(z<0) continue;

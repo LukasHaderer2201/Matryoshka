@@ -1,0 +1,102 @@
+DA-Themen
+
+Kobayashi-Maru
+
+* BGP-Hijacking
+* Geheim
+* IoT
+* Lizenzierungsverfahren
+* Log Analysis
+* Memory Analysis
+* Man-in-the-Middle (MiTM)
+* Network Analysis
+* Network Sniffing
+* Pass-the-Hash
+* SQL Injection
+* Steganographie
+* VLAN-Hopping
+* Webserver
+
+Rasputin
+
+* Birthday Attack
+* Birthday Attack Extended
+* Botnet
+* DHCP Starvation
+* DNS Cache Poisoning
+* DNS Flood
+* DNS Volumetric
+* DSA
+* E-Mail-Spoofing
+* Homophone-Chiffre
+* Passwort-Cracking
+* Phishing
+* Ping Flood
+* Reconnaissance
+* Rogue DHCP
+* RSA
+* Spear-Phishing
+* Steganografie Audio
+* Steganografie Video
+* TCP SYN Flood
+
+BBB
+
+* 2FA-Bypass
+* API-Hooking
+* Deepfakes
+* Dictionary Attack
+* DLL-Hijacking
+* Flipper
+* Metadatenmanipulation
+* Netzwerkforensik
+* PHI
+* Phishing
+* Ransomware
+* RAT-Trojaner
+
+Zerosec
+
+* EternalBlue
+* Local File Inclusion (LFI)
+* Festplattenanalyse
+* Golden Ticket
+* Keylogger
+* Vigenère-Verschlüsselung
+* LOG4J
+* Morris DOS
+* Ping of Flood
+* RIP Spoofing
+* Steganographie – Affine Chiffre
+* Steganographie – Bacon Chiffre
+* Steganographie – Bilddateien
+* Steganographie – Caesar-Chiffre
+* WLAN Brute-Force
+* Datenträgerverschlüsselung
+* Moderne Kryptographie
+
+Matryoshka
+
+* Netzwerkangriff durch einen Wurm
+* Dateiverschlüsselung durch Ransomware
+* Schadsoftware-Einschleusung via Trojaner
+* Manipulation durch Scareware
+* STP Manipulation durch Root Bridge Attack
+* ICMP Redirect
+* Firewall State Table Exhaustion
+* DNS-Spoofing Angriff
+* Passives Abhören via SPAN-Port
+* SIP Registration Hijacking
+* SIP INVITE-Flooding DoS
+* SIP Extension Scanning
+* Evil Twin Attack
+* Replay Attack
+* PMKID Attack
+* BlueSnarfing
+* TLS-Downgrade-Angriff
+* Padding-Oracle-Angriff auf AES-CBC
+* Rogue-CA / Zertifikatsfälschung
+* Timing-Side-Channel-Angriff auf Authentifizierung
+* TEMPEST-Angriff
+* WPA3 Dragonblood Attack
+* DNS-Spoofing mit Phishing und MITM-Komponenten
