@@ -435,34 +435,26 @@ const ATTACKS = ATTACKS_RAW.map((a,i)=>{
 });
 
 // ─── FILTER-STATUS ──────────────────────────────────────────────────────────
-let selectedTeam = null; // null = Standardansicht
-let fourMode = false;    // true = 4 Übungen je DA, unabhängig vom Team-Filter
+// Standardansicht: 5 Übungen je DA. Team-Klick filtert auf nur diese eine DA
+// (alle ihre Übungen, auch bei Matryoshka).
+let selectedTeam = null; // gesetzt = nur diese DA vollständig anzeigen
 
-const FOUR_PER_TEAM = Math.min(4, 4); // Anzahl Themen je DA im "4 je DA"-Modus
-function topFourOfTeam(team){
+const PER_TEAM_DEFAULT = 5; // Anzahl Themen je DA in der Standardansicht
+function topNOfTeam(team, n){
   const items=ATTACKS.filter(a=>a.team===team);
   const showcase=items.filter(a=>a.showcase);
   const rest=items.filter(a=>!a.showcase);
-  return showcase.concat(rest).slice(0,4);
+  return showcase.concat(rest).slice(0,n);
 }
 
-function isDefaultVisible(atk){ return atk.team==='Matryoshka' || atk.showcase===true; }
 function visibleAttacks(){
   if(selectedTeam) return ATTACKS.filter(a=>a.team===selectedTeam);
-  if(fourMode) return TEAM_ORDER.flatMap(topFourOfTeam);
-  return ATTACKS.filter(isDefaultVisible);
+  return TEAM_ORDER.flatMap(team=>topNOfTeam(team, PER_TEAM_DEFAULT));
 }
 
 function buildTeamPanel(){
   const wrap=document.getElementById('teams');
   wrap.innerHTML='';
-
-  const fourBtn=document.createElement('button');
-  fourBtn.id='four-mode-btn';
-  fourBtn.className='team-badge mode-badge';
-  fourBtn.innerHTML=`<span class="team-dot" style="background:#e0f4ff"></span><span style="color:#c8e8ff">4 Übungen je DA</span>`;
-  fourBtn.addEventListener('click', toggleFourMode);
-  wrap.appendChild(fourBtn);
 
   for(const team of TEAM_ORDER){
     const total=ATTACKS.filter(a=>a.team===team).length;
@@ -477,17 +469,11 @@ function buildTeamPanel(){
   const reset=document.createElement('div');
   reset.id='filter-reset';
   reset.innerHTML='✕ FILTER ZURÜCKSETZEN';
-  reset.addEventListener('click', ()=>{ fourMode=false; setTeamFilter(null); });
+  reset.addEventListener('click', ()=>setTeamFilter(null));
   wrap.appendChild(reset);
 }
 
-function toggleTeam(team){ fourMode=false; setTeamFilter(selectedTeam===team ? null : team); }
-function toggleFourMode(){
-  fourMode=!fourMode;
-  selectedTeam=null;
-  closePanel();
-  refreshTeamUI();
-}
+function toggleTeam(team){ setTeamFilter(selectedTeam===team ? null : team); }
 function setTeamFilter(team){
   selectedTeam=team;
   closePanel();
@@ -497,16 +483,14 @@ function refreshTeamUI(){
   document.querySelectorAll('.team-badge[data-team]').forEach(btn=>{
     const t=btn.dataset.team;
     btn.classList.toggle('is-active', selectedTeam===t);
-    btn.classList.toggle('is-dimmed', (!!selectedTeam && selectedTeam!==t) || fourMode);
+    btn.classList.toggle('is-dimmed', !!selectedTeam && selectedTeam!==t);
   });
-  document.getElementById('four-mode-btn').classList.toggle('is-active', fourMode);
-  document.getElementById('four-mode-btn').classList.toggle('is-dimmed', !!selectedTeam);
-  document.getElementById('filter-reset').classList.toggle('visible', !!selectedTeam || fourMode);
+  document.getElementById('filter-reset').classList.toggle('visible', !!selectedTeam);
   const list=visibleAttacks();
   document.getElementById('count-num').textContent=list.length;
   document.getElementById('count-label').textContent = selectedTeam
     ? selectedTeam.toUpperCase()+' · THEMEN'
-    : fourMode ? '4 THEMEN JE DA' : 'ATTACK SCENARIOS';
+    : '5 THEMEN JE DA';
   const countBox=document.querySelector('.count-box');
   const col = selectedTeam ? TEAMS[selectedTeam].color : '#00c8ff';
   countBox.style.borderColor = selectedTeam ? col+'80' : 'rgba(0,200,255,0.25)';
