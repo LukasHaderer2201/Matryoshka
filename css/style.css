@@ -704,6 +704,15 @@ p:last-child { margin-bottom: 0; }
 }
 .naechste:hover .name { color: var(--gold); }
 
+.partner-logo {
+  display: inline-block;
+  margin: 14px 0 18px;
+  padding: 14px 22px;
+  background: #fff;
+  border-radius: 6px;
+}
+.partner-logo img { display: block; height: 40px; width: auto; }
+
 /* ---------- 9. Impressum -------------------------------------- */
 .doc-hero {
   padding: calc(var(--kopf-h) + clamp(50px, 9vw, 92px)) 0 clamp(30px, 5vw, 52px);
