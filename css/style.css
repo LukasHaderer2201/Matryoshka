@@ -528,19 +528,6 @@ p:last-child { margin-bottom: 0; }
   letter-spacing: 0.04em;
   color: rgba(239, 233, 223, 0.22);
 }
-.portrait-ecken {
-  position: absolute;
-  inset: -1px;
-  z-index: 3;
-  pointer-events: none;
-}
-.portrait-ecken path {
-  fill: none;
-  stroke: var(--gold);
-  stroke-width: 1.4;
-  opacity: 0.85;
-  vector-effect: non-scaling-stroke;
-}
 .portrait-marke {
   position: absolute;
   top: 12px; left: 12px;
