@@ -11,6 +11,7 @@
     --bg: #020b16;
     --accent: #00c8ff;
     --accent2: #ff3c6e;
+    --gold: #c58312;
     --glow: 0 0 20px rgba(0,200,255,0.5);
   }
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -76,6 +77,24 @@
   }
   .team-badge.is-dimmed { opacity: 0.35; }
   .mode-badge { border-style: dashed; margin-bottom: 4px; }
+
+  /* "Alle Diplomarbeiten" – Gold-Button */
+  #show-all {
+    border-color: rgba(197,131,18,0.55);
+    color: #e9c074; letter-spacing: 0.5px;
+  }
+  #show-all .ba-label { color: #e9c074; font-weight: 600; }
+  #show-all .team-dot { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+  #show-all:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(197,131,18,0.55);
+  }
+  #show-all.is-active {
+    background: rgba(197,131,18,0.18);
+    border-color: var(--gold);
+    box-shadow: 0 0 22px rgba(197,131,18,0.55);
+  }
+  #show-all.is-active .ba-label { color: #ffd98a; }
   .team-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; box-shadow: 0 0 6px currentColor; }
   .team-count {
     margin-left:auto; font-size:9px; opacity:0.6; padding-left:10px;
@@ -153,7 +172,7 @@
   <div class="logo-icon">🌐</div>
   <div>
     <h1>Cyber Attack Big Picture</h1>
-    <div class="subtitle">Network &amp; Cyber Attack Taxonomy — Diplomarbeiten 2026/27</div>
+    <div class="subtitle">Network &amp; Cyber Attack Taxonomy — Diplomarbeiten 2023/27</div>
   </div>
 </header>
 
@@ -438,6 +457,12 @@ const ATTACKS = ATTACKS_RAW.map((a,i)=>{
 // Standardansicht: 5 Übungen je DA. Team-Klick filtert auf nur diese eine DA
 // (alle ihre Übungen, auch bei Matryoshka).
 let selectedTeam = null; // gesetzt = nur diese DA vollständig anzeigen
+let showAll = false;     // true = alle DAs mit allen Übungen anzeigen
+const GOLD = '#c58312';  // Matryoshka-Gold
+
+// TEST: Knoten (Diplomarbeitsaufgaben) als Satelliten darstellen.
+// Auf false setzen für die alte Form-/Emoji-Darstellung.
+const SATELLITE_MODE = true;
 
 const PER_TEAM_DEFAULT = 5; // Anzahl Themen je DA in der Standardansicht
 function topNOfTeam(team, n){
@@ -448,6 +473,7 @@ function topNOfTeam(team, n){
 }
 
 function visibleAttacks(){
+  if(showAll) return ATTACKS;
   if(selectedTeam) return ATTACKS.filter(a=>a.team===selectedTeam);
   return TEAM_ORDER.flatMap(team=>topNOfTeam(team, PER_TEAM_DEFAULT));
 }
@@ -455,6 +481,14 @@ function visibleAttacks(){
 function buildTeamPanel(){
   const wrap=document.getElementById('teams');
   wrap.innerHTML='';
+
+  // Gold-Button: alle Diplomarbeiten mit allen Übungen
+  const allBtn=document.createElement('button');
+  allBtn.id='show-all';
+  allBtn.className='team-badge mode-badge';
+  allBtn.innerHTML=`<span class="team-dot"></span><span class="ba-label">ALLE DA · ALLE ÜBUNGEN</span><span class="team-count">${ATTACKS.length}</span>`;
+  allBtn.addEventListener('click', toggleShowAll);
+  wrap.appendChild(allBtn);
 
   for(const team of TEAM_ORDER){
     const total=ATTACKS.filter(a=>a.team===team).length;
@@ -476,6 +510,13 @@ function buildTeamPanel(){
 function toggleTeam(team){ setTeamFilter(selectedTeam===team ? null : team); }
 function setTeamFilter(team){
   selectedTeam=team;
+  showAll=false;
+  closePanel();
+  refreshTeamUI();
+}
+function toggleShowAll(){
+  showAll=!showAll;
+  selectedTeam=null;
   closePanel();
   refreshTeamUI();
 }
@@ -483,17 +524,21 @@ function refreshTeamUI(){
   document.querySelectorAll('.team-badge[data-team]').forEach(btn=>{
     const t=btn.dataset.team;
     btn.classList.toggle('is-active', selectedTeam===t);
-    btn.classList.toggle('is-dimmed', !!selectedTeam && selectedTeam!==t);
+    btn.classList.toggle('is-dimmed', (!!selectedTeam && selectedTeam!==t) || showAll);
   });
-  document.getElementById('filter-reset').classList.toggle('visible', !!selectedTeam);
+  const allBtn=document.getElementById('show-all');
+  if(allBtn) allBtn.classList.toggle('is-active', showAll);
+  document.getElementById('filter-reset').classList.toggle('visible', !!selectedTeam || showAll);
   const list=visibleAttacks();
   document.getElementById('count-num').textContent=list.length;
-  document.getElementById('count-label').textContent = selectedTeam
-    ? selectedTeam.toUpperCase()+' · THEMEN'
-    : '5 THEMEN JE DA';
+  document.getElementById('count-label').textContent = showAll
+    ? 'ALLE DA · ALLE ÜBUNGEN'
+    : selectedTeam
+      ? selectedTeam.toUpperCase()+' · THEMEN'
+      : '5 THEMEN JE DA';
   const countBox=document.querySelector('.count-box');
-  const col = selectedTeam ? TEAMS[selectedTeam].color : '#00c8ff';
-  countBox.style.borderColor = selectedTeam ? col+'80' : 'rgba(0,200,255,0.25)';
+  const col = showAll ? GOLD : (selectedTeam ? TEAMS[selectedTeam].color : '#00c8ff');
+  countBox.style.borderColor = (selectedTeam || showAll) ? col+'80' : 'rgba(0,200,255,0.25)';
   document.getElementById('count-num').style.color = col;
 }
 buildTeamPanel();
@@ -758,28 +803,200 @@ function drawShape(type, x, y, r, ctx){
   }
 }
 
+// Zeichnet einen kleinen Satelliten: Korpus + zwei Solarpaneele + Antenne.
+// col/glow = Teamfarbe, damit die DAs weiterhin unterscheidbar bleiben.
+function drawSatellite(sx, sy, R, col, glow, isHov, seed){
+  ctx.save();
+  ctx.translate(sx, sy);
+  // sanftes Taumeln, pro Knoten leicht versetzt
+  const ang = Math.sin(animFrame*0.02 + seed*1.3)*0.2 + (seed%6.283)*0.5;
+  ctx.rotate(ang);
+
+  const bodyW = R*1.05, bodyH = R*0.8;
+  const panelW = R*1.25, panelH = R*0.9;
+  const arm = R*0.35;
+  const edge = col + (isHov ? 'ff' : 'cc');
+
+  // ── Trägerarme zu den Paneelen ──
+  ctx.strokeStyle = edge;
+  ctx.lineWidth = Math.max(1, R*0.14);
+  ctx.beginPath();
+  ctx.moveTo(-bodyW/2, 0); ctx.lineTo(-bodyW/2-arm, 0);
+  ctx.moveTo( bodyW/2, 0); ctx.lineTo( bodyW/2+arm, 0);
+  ctx.stroke();
+
+  // ── Solarpaneele (links & rechts) mit Zellraster ──
+  function panel(sign){
+    const x0 = sign*(bodyW/2+arm), y0 = -panelH/2;
+    const px = sign>0 ? x0 : x0-panelW;
+    const grad = ctx.createLinearGradient(px, y0, px, y0+panelH);
+    grad.addColorStop(0, '#12365e');
+    grad.addColorStop(1, '#06182f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px, y0, panelW, panelH);
+    // Rasterlinien in Teamfarbe
+    ctx.strokeStyle = col + '55';
+    ctx.lineWidth = Math.max(0.5, R*0.04);
+    for(let c=1;c<3;c++){ const gx=px+panelW*c/3; ctx.beginPath(); ctx.moveTo(gx,y0); ctx.lineTo(gx,y0+panelH); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px+panelW,0); ctx.stroke();
+    // Rahmen
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = Math.max(0.8, R*0.08);
+    ctx.strokeRect(px, y0, panelW, panelH);
+  }
+  panel(-1); panel(1);
+
+  // ── Korpus (metallisch) ──
+  const bg = ctx.createLinearGradient(0,-bodyH/2,0,bodyH/2);
+  bg.addColorStop(0, isHov ? '#ffffff' : '#d7e6f5');
+  bg.addColorStop(1, '#5c7487');
+  ctx.fillStyle = bg;
+  const bx=-bodyW/2, by=-bodyH/2, br=R*0.18;
+  ctx.beginPath();
+  ctx.moveTo(bx+br,by);
+  ctx.arcTo(bx+bodyW,by,bx+bodyW,by+bodyH,br);
+  ctx.arcTo(bx+bodyW,by+bodyH,bx,by+bodyH,br);
+  ctx.arcTo(bx,by+bodyH,bx,by,br);
+  ctx.arcTo(bx,by,bx+bodyW,by,br);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, R*0.1); ctx.stroke();
+
+  // ── Antenne / Parabolschüssel oben ──
+  ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, R*0.1);
+  ctx.beginPath(); ctx.moveTo(0,-bodyH/2); ctx.lineTo(0,-bodyH/2-R*0.45); ctx.stroke();
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(0,-bodyH/2-R*0.55, R*0.22, 0, Math.PI*2); ctx.fill();
+
+  // ── Leuchtendes "Auge" im Korpus ──
+  ctx.fillStyle = isHov ? '#ffffff' : col;
+  ctx.shadowColor = glow; ctx.shadowBlur = (isHov?12:6);
+  ctx.beginPath(); ctx.arc(0,0,R*0.18,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.restore();
+}
+
+// ── Umlaufbahnen (Orbits) ─────────────────────────────────────────────────
+// Jede Diplomarbeitsaufgabe bekommt deterministisch eine eigene Umlaufbahn:
+// Höhe (rad), Inklination, Knotenlänge, Startphase, Geschwindigkeit/Richtung.
+function satOrbit(id){
+  const f=(n)=>{ const x=Math.sin(id*12.9898 + n*78.233)*43758.5453; return x-Math.floor(x); };
+  return {
+    rad:   1.18 + f(1)*0.30,              // Bahnhöhe über der Kugel
+    inc:   f(2)*Math.PI,                  // Bahnneigung
+    asc:   f(3)*Math.PI*2,                // Lage der Bahnebene
+    phase: f(4)*Math.PI*2,                // Startposition
+    speed: (0.0016 + f(5)*0.0024) * (f(6)<0.5?1:-1), // Tempo + Umlaufrichtung
+  };
+}
+// Punkt auf der Bahn bei Winkel th (Welt-Koordinaten, vor der Ansichtsrotation)
+function satPointAtAngle(o, th){
+  let x=Math.cos(th)*o.rad, y=Math.sin(th)*o.rad, z=0;
+  // Inklination um X-Achse
+  let y1=y*Math.cos(o.inc)-z*Math.sin(o.inc);
+  let z1=y*Math.sin(o.inc)+z*Math.cos(o.inc);
+  // Knotenlänge um Y-Achse
+  let x2=x*Math.cos(o.asc)+z1*Math.sin(o.asc);
+  let z2=-x*Math.sin(o.asc)+z1*Math.cos(o.asc);
+  return {x:x2, y:y1, z:z2};
+}
+function satPos3D(o, t){ return satPointAtAngle(o, o.phase + o.speed*t); }
+
+// Bahn im "Alle DA"-Modus: alle Satelliten einer DA (gleiche Farbe) teilen sich
+// einen eigenen Orbit. Die Bahnebenen der DAs sind unterschiedlich geneigt und
+// gedreht, sodass die Orbits zusammen die ganze Erde umspannen.
+function teamOrbit(atk){
+  if(!atk._oAll){
+    const idx=TEAM_ORDER.indexOf(atk.team);
+    const nTeams=TEAM_ORDER.length;
+    const members=ATTACKS.filter(a=>a.team===atk.team);
+    const k=members.indexOf(atk);
+    const n=members.length;
+    // Neigung gegenüber dem Äquator: von flach (0.2 rad) bis steil (~1.35 rad)
+    const tilt = 0.2 + idx*(1.15/Math.max(1,nTeams-1));
+    atk._oAll={
+      rad:   1.2 + idx*0.06,                        // eigene Höhe pro DA
+      inc:   Math.PI/2 - tilt,                      // PI/2 = Äquatorebene
+      asc:   idx*(Math.PI*2/nTeams) + 0.3,          // Bahnebenen rundum verteilt
+      phase: (k/n)*Math.PI*2,                       // gleichmäßig verteilt auf dem Ring
+      speed: 0.0022*(idx%2 ? 1 : -1),               // gleiches Tempo je DA
+    };
+  }
+  return atk._oAll;
+}
+// Aktive Bahn eines Knotens: Team-Ring im "Alle"-Modus, sonst eigene Bahn
+function getOrbit(atk){
+  if(!atk._o) atk._o = satOrbit(atk.id);
+  return showAll ? teamOrbit(atk) : atk._o;
+}
+
+// Weltposition eines Knotens: Satellit auf Umlaufbahn oder (alt) fix auf der Kugel
+function worldPos3D(atk){
+  if(SATELLITE_MODE){
+    return satPos3D(getOrbit(atk), animFrame);
+  }
+  return latLonTo3D(atk.lat, atk.lon);
+}
+// true, wenn der Punkt hinter der Kugel liegt (verdeckt)
+function behindGlobe(p3){ return p3.z<0 && Math.hypot(p3.x,p3.y)<1.0; }
+
+// Zeichnet eine Umlaufbahn als dünne Linie (Teil hinter der Kugel wird ausgeblendet)
+function drawOrbit(o, col){
+  const r=R*zoom;
+  ctx.beginPath();
+  let pen=false;
+  for(let s=0;s<=72;s++){
+    const th=(s/72)*Math.PI*2;
+    const p3=rotate3D(satPointAtAngle(o, th));
+    if(behindGlobe(p3)){ pen=false; continue; }
+    const sx=cx+p3.x*r, sy=cy-p3.y*r;
+    pen?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy); pen=true;
+  }
+  ctx.strokeStyle=col+'2a'; ctx.lineWidth=1; ctx.stroke();
+}
+
 function drawNodes(){
   const list=visibleAttacks();
   const nodes2d=[];
   for(const atk of list){
-    const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
+    const p3=rotate3D(worldPos3D(atk));
     const {sx,sy,z}=project(p3);
-    const visible=z>-0.05;
-    const alpha=visible?Math.max(0.15,(z+0.05)/1.05):0;
+    let visible, alpha;
+    if(SATELLITE_MODE){
+      visible = !behindGlobe(p3);
+      alpha = visible ? Math.max(0.3, Math.min(1,(z+1.25)/2.0)) : 0;
+    } else {
+      visible = z>-0.05;
+      alpha = visible?Math.max(0.15,(z+0.05)/1.05):0;
+    }
     nodes2d.push({atk,sx,sy,z,visible,alpha});
   }
   nodes2d.sort((a,b)=>a.z-b.z);
+  const labelQueue=[];
 
-  // Team connection lines
-  const teamMap={};
-  for(const n of nodes2d){ const t=n.atk.team; if(!teamMap[t])teamMap[t]=[]; teamMap[t].push(n); }
-  for(const [team,nodes] of Object.entries(teamMap)){
-    const col=TEAMS[team].color;
-    for(let i=0;i<nodes.length-1;i++){
-      const a=nodes[i],b=nodes[i+1];
-      if(!a.visible||!b.visible) continue;
-      ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy);
-      ctx.strokeStyle=col+'28'; ctx.lineWidth=1; ctx.setLineDash([4,7]); ctx.stroke(); ctx.setLineDash([]);
+  if(SATELLITE_MODE){
+    // Umlaufbahnen hinter die Satelliten zeichnen (jede Bahn nur einmal,
+    // im "Alle"-Modus teilen sich alle Satelliten einer DA eine Bahn)
+    const drawnOrbits=new Set();
+    for(const n of nodes2d){
+      const o=getOrbit(n.atk);
+      if(drawnOrbits.has(o)) continue;
+      drawnOrbits.add(o);
+      drawOrbit(o, TEAMS[n.atk.team].color);
+    }
+  } else {
+    // Team connection lines (alte Konstellations-Linien)
+    const teamMap={};
+    for(const n of nodes2d){ const t=n.atk.team; if(!teamMap[t])teamMap[t]=[]; teamMap[t].push(n); }
+    for(const [team,nodes] of Object.entries(teamMap)){
+      const col=TEAMS[team].color;
+      for(let i=0;i<nodes.length-1;i++){
+        const a=nodes[i],b=nodes[i+1];
+        if(!a.visible||!b.visible) continue;
+        ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy);
+        ctx.strokeStyle=col+'28'; ctx.lineWidth=1; ctx.setLineDash([4,7]); ctx.stroke(); ctx.setLineDash([]);
+      }
     }
   }
 
@@ -789,7 +1006,7 @@ function drawNodes(){
     const col=TEAMS[atk.team].color;
     const glow=TEAMS[atk.team].glow;
     const isHov=hoveredNode===atk.id;
-    const baseR=isHov?20:14;
+    const baseR = SATELLITE_MODE ? (isHov?12:8) : (isHov?20:14);
     const pulse=Math.sin(animFrame*0.05+atk.id*1.1)*2.5;
     const shape=SHAPES[atk.cat];
 
@@ -801,36 +1018,44 @@ function drawNodes(){
     g.addColorStop(0,glow); g.addColorStop(0.5,glow.replace('0.7','0.2')); g.addColorStop(1,'transparent');
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,ringR,0,Math.PI*2); ctx.fill();
 
-    // Animated outer ring stroke
-    ctx.save();
-    ctx.strokeStyle=col+(isHov?'cc':'66');
-    ctx.lineWidth=(isHov?2.5:1.5)*zoom;
-    drawShape(shape,sx,sy,(baseR+6)*zoom,ctx);
-    ctx.stroke(); ctx.restore();
+    if(SATELLITE_MODE){
+      // TEST: Satelliten-Darstellung
+      drawSatellite(sx, sy, baseR*zoom, col, glow, isHov, atk.id);
+    } else {
+      // Animated outer ring stroke
+      ctx.save();
+      ctx.strokeStyle=col+(isHov?'cc':'66');
+      ctx.lineWidth=(isHov?2.5:1.5)*zoom;
+      drawShape(shape,sx,sy,(baseR+6)*zoom,ctx);
+      ctx.stroke(); ctx.restore();
 
-    // Main node fill
-    ctx.save();
-    const fillGrad=ctx.createRadialGradient(sx-baseR*0.3*zoom,sy-baseR*0.3*zoom,0,sx,sy,baseR*zoom);
-    fillGrad.addColorStop(0,isHov?'#ffffff':col+'ff');
-    fillGrad.addColorStop(1,isHov?col+'bb':col+'99');
-    ctx.fillStyle=fillGrad;
-    drawShape(shape,sx,sy,baseR*zoom,ctx);
-    ctx.fill();
-    ctx.strokeStyle=isHov?'#fff':col+'aa';
-    ctx.lineWidth=isHov?2.5:1.5;
-    ctx.stroke(); ctx.restore();
+      // Main node fill
+      ctx.save();
+      const fillGrad=ctx.createRadialGradient(sx-baseR*0.3*zoom,sy-baseR*0.3*zoom,0,sx,sy,baseR*zoom);
+      fillGrad.addColorStop(0,isHov?'#ffffff':col+'ff');
+      fillGrad.addColorStop(1,isHov?col+'bb':col+'99');
+      ctx.fillStyle=fillGrad;
+      drawShape(shape,sx,sy,baseR*zoom,ctx);
+      ctx.fill();
+      ctx.strokeStyle=isHov?'#fff':col+'aa';
+      ctx.lineWidth=isHov?2.5:1.5;
+      ctx.stroke(); ctx.restore();
 
-    // Inner icon emoji
-    ctx.save();
-    ctx.font=`${Math.round((baseR*0.9)*zoom)}px serif`;
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.globalAlpha=alpha*(isHov?1:0.9);
-    ctx.fillStyle=isHov?col:'#fff';
-    ctx.fillText(getCatEmoji(atk.cat),sx,sy+1);
-    ctx.restore();
+      // Inner icon emoji
+      ctx.save();
+      ctx.font=`${Math.round((baseR*0.9)*zoom)}px serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.globalAlpha=alpha*(isHov?1:0.9);
+      ctx.fillStyle=isHov?col:'#fff';
+      ctx.fillText(getCatEmoji(atk.cat),sx,sy+1);
+      ctx.restore();
+    }
 
     // Label
-    if(alpha>0.35||isHov){
+    if(showAll && SATELLITE_MODE){
+      // im "Alle"-Modus separat (lesbarer, ohne Überlappung) – siehe drawAllLabels
+      if(alpha>0.35||isHov) labelQueue.push({atk,sx,sy,z:nd.z,alpha,col,baseR,isHov});
+    } else if(alpha>0.35||isHov){
       ctx.save();
       ctx.font=`${isHov?'bold ':''} ${Math.round(11*zoom)}px 'Exo 2', sans-serif`;
       ctx.fillStyle=col;
@@ -848,14 +1073,52 @@ function drawNodes(){
 
     ctx.globalAlpha=1;
   }
+
+  if(labelQueue.length) drawAllLabels(labelQueue);
+}
+
+// Lesbare Labels für den "Alle DA"-Modus: dunkle Hinterlegung, helle Schrift,
+// Rahmen in Teamfarbe. Vordere Satelliten haben Vorrang; überlappende Labels
+// weiter hinten werden ausgelassen (gehovertes Label wird immer gezeigt).
+function drawAllLabels(queue){
+  queue.sort((a,b)=> (b.isHov-a.isHov) || (b.z-a.z));
+  const placed=[];
+  const fs=Math.max(8, Math.round(9*zoom));
+  ctx.save();
+  ctx.font=`500 ${fs}px 'Exo 2', sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const L of queue){
+    const w=ctx.measureText(L.atk.name).width + 10;
+    const h=fs + 6;
+    const x=L.sx - w/2;
+    const y=L.sy - (L.baseR+10)*zoom - h;
+    const hit=placed.some(p=> x < p.x+p.w+4 && x+w+4 > p.x && y < p.y+p.h+2 && y+h+2 > p.y);
+    if(hit && !L.isHov) continue;
+    placed.push({x,y,w,h});
+
+    ctx.globalAlpha = L.isHov ? 1 : Math.max(0.75, L.alpha);
+    // Hinterlegung
+    ctx.fillStyle='rgba(2,11,22,0.88)';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x,y,w,h,4); else ctx.rect(x,y,w,h);
+    ctx.fill();
+    ctx.strokeStyle=L.col+(L.isHov?'ff':'99');
+    ctx.lineWidth=L.isHov?1.5:1;
+    ctx.stroke();
+    // Text
+    ctx.fillStyle = L.isHov ? '#ffffff' : '#e8f6ff';
+    ctx.fillText(L.atk.name, L.sx, y + h/2 + 0.5);
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
 }
 
 function hitTest(mx,my){
   for(const atk of visibleAttacks()){
-    const p3=rotate3D(latLonTo3D(atk.lat,atk.lon));
-    const {sx,sy,z}=project(p3);
-    if(z<0) continue;
-    if(Math.hypot(mx-sx,my-sy)<24*zoom) return atk;
+    const p3=rotate3D(worldPos3D(atk));
+    const {sx,sy}=project(p3);
+    if(SATELLITE_MODE ? behindGlobe(p3) : p3.z<0) continue;
+    if(Math.hypot(mx-sx,my-sy)<22*zoom) return atk;
   }
   return null;
 }
