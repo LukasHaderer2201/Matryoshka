@@ -156,12 +156,50 @@
     color:rgba(0,200,255,0.3); text-align:right; line-height:2;
   }
 
+  /* ── Handy ─────────────────────────────────────────────────────────── */
   @media (max-width: 720px) {
-    #teams { top:84px; left:10px; max-width:150px; }
-    .team-badge { font-size:9px; padding:6px 9px; }
-    #counter { top:84px; right:10px; }
-    .count-box { padding:9px 13px; }
-    .count-num { font-size:30px; }
+    body { height:100dvh; }
+
+    /* kompakter Kopf, einzeilig */
+    #header { padding:10px 14px; gap:10px; }
+    #header > div:last-child { min-width:0; }
+    .logo-icon { width:32px; height:32px; font-size:16px; flex-shrink:0; }
+    h1 { font-size:11px; letter-spacing:1.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .subtitle { font-size:8px; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* Team-Filter als horizontal wischbare Chip-Leiste statt Spalte über dem Globus */
+    #teams {
+      top:56px; left:0; right:0; max-width:none;
+      flex-direction:row; align-items:center; gap:6px;
+      padding:2px 12px 8px;
+      overflow-x:auto; overscroll-behavior-x:contain;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    }
+    #teams::-webkit-scrollbar { display:none; }
+    .team-badge { width:auto; flex:0 0 auto; white-space:nowrap; font-size:10px; padding:9px 12px; }
+    .team-badge:hover { transform:none; }
+    .mode-badge { margin-bottom:0; }
+    .team-count { margin-left:4px; padding-left:2px; }
+    #filter-reset { flex:0 0 auto; white-space:nowrap; margin-top:0; padding:9px 12px; }
+
+    /* Zähler klein nach unten links, Hinweistext ausblenden */
+    #counter { top:auto; bottom:12px; left:12px; right:auto; text-align:left; }
+    .count-box { padding:7px 11px; }
+    .count-num { font-size:22px; }
+    .count-label { font-size:8px; letter-spacing:1px; }
+    #hint { display:none; }
+
+    /* Detailkarte: volle Breite, begrenzte Höhe, scrollbar */
+    #detail-panel {
+      bottom:10px; width:calc(100vw - 20px);
+      padding:14px 16px; max-height:52dvh; overflow-y:auto;
+    }
+    .panel-title { font-size:13px; }
+    .panel-grid { gap:6px; margin-bottom:10px; }
+    .panel-field { padding:6px 8px; }
+    .field-val { font-size:11.5px; }
+    .panel-desc { font-size:11.5px; line-height:1.55; }
+    .panel-close { font-size:20px; padding:4px 2px 4px 10px; }
   }
 </style>
 </head>
@@ -202,7 +240,7 @@
   <div class="panel-desc" id="p-desc">—</div>
 </div>
 
-<div id="hint">KLICK TEAM → Filter<br>KLICK KNOTEN → Details<br>DRAG → Drehen · SCROLL → Zoom</div>
+<div id="hint">KLICK TEAM → Filter<br>KLICK SATELLIT → Details · ESC → Schließen<br>DRAG → Drehen · SCROLL / PINCH → Zoom</div>
 
 <script>
 // ─── TEAMS (DA-Gruppen) ─────────────────────────────────────────────────────
@@ -552,10 +590,23 @@ let rotX=0.3, rotY=0;
 let zoom=1;
 let dragging=false, lastMX, lastMY, dragMoved=false;
 let hoveredNode=null;
+let selectedNode=null;   // Satellit, dessen Detailkarte offen ist
 let animFrame=0;
 let autoRotate=true;
+let allBlend=0;          // 0 = Einzelbahnen, 1 = DA-Ringe ("Alle"-Modus), weich überblendet
+let mouseX=0, mouseY=0, mouseInside=false;
 
-function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; cx=W/2; cy=H/2; R=Math.min(W,H)*0.28; }
+// Canvas in Gerätepixeln rendern (scharf auf HiDPI-Displays), gerechnet wird in CSS-Pixeln
+function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1, 2);
+  W=window.innerWidth; H=window.innerHeight;
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  // auf schmalen Displays den Globus etwas größer – die Seitenleisten entfallen dort
+  cx=W/2; cy=H/2; R=Math.min(W,H)*(W<720?0.31:0.28);
+}
+const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 resize(); window.addEventListener('resize',resize);
 
 function latLonTo3D(lat,lon){
@@ -928,15 +979,26 @@ function teamOrbit(atk){
 // Aktive Bahn eines Knotens: Team-Ring im "Alle"-Modus, sonst eigene Bahn
 function getOrbit(atk){
   if(!atk._o) atk._o = satOrbit(atk.id);
-  return showAll ? teamOrbit(atk) : atk._o;
+  return allBlend>0.5 ? teamOrbit(atk) : atk._o;
 }
 
-// Weltposition eines Knotens: Satellit auf Umlaufbahn oder (alt) fix auf der Kugel
+// Weltposition eines Knotens: Satellit auf Umlaufbahn oder (alt) fix auf der Kugel.
+// Beim Umschalten in den / aus dem "Alle"-Modus gleiten die Satelliten weich
+// von ihrer Einzelbahn auf den DA-Ring (und zurück), statt zu springen.
 function worldPos3D(atk){
-  if(SATELLITE_MODE){
-    return satPos3D(getOrbit(atk), animFrame);
-  }
-  return latLonTo3D(atk.lat, atk.lon);
+  if(!SATELLITE_MODE) return latLonTo3D(atk.lat, atk.lon);
+  if(!atk._o) atk._o = satOrbit(atk.id);
+  if(allBlend<=0.001) return satPos3D(atk._o, animFrame);
+  const to=teamOrbit(atk);
+  const b=satPos3D(to, animFrame);
+  if(allBlend>=0.999) return b;
+  const a=satPos3D(atk._o, animFrame);
+  const t=allBlend*allBlend*(3-2*allBlend);
+  const x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t, z=a.z+(b.z-a.z)*t;
+  const len=Math.hypot(x,y,z);
+  if(len<0.05) return t<0.5 ? a : b;
+  const s=(atk._o.rad+(to.rad-atk._o.rad)*t)/len; // auf Bahnhöhe halten, nicht durch die Kugel
+  return {x:x*s, y:y*s, z:z*s};
 }
 // true, wenn der Punkt hinter der Kugel liegt (verdeckt)
 function behindGlobe(p3){ return p3.z<0 && Math.hypot(p3.x,p3.y)<1.0; }
@@ -1005,7 +1067,7 @@ function drawNodes(){
     const {atk,sx,sy,alpha}=nd;
     const col=TEAMS[atk.team].color;
     const glow=TEAMS[atk.team].glow;
-    const isHov=hoveredNode===atk.id;
+    const isHov=hoveredNode===atk.id || selectedNode===atk.id;
     const baseR = SATELLITE_MODE ? (isHov?12:8) : (isHov?20:14);
     const pulse=Math.sin(animFrame*0.05+atk.id*1.1)*2.5;
     const shape=SHAPES[atk.cat];
@@ -1052,7 +1114,7 @@ function drawNodes(){
     }
 
     // Label
-    if(showAll && SATELLITE_MODE){
+    if((showAll || W<720) && SATELLITE_MODE){
       // im "Alle"-Modus separat (lesbarer, ohne Überlappung) – siehe drawAllLabels
       if(alpha>0.35||isHov) labelQueue.push({atk,sx,sy,z:nd.z,alpha,col,baseR,isHov});
     } else if(alpha>0.35||isHov){
@@ -1113,14 +1175,19 @@ function drawAllLabels(queue){
   ctx.globalAlpha=1;
 }
 
+// Liefert den nächstgelegenen Satelliten unter dem Zeiger.
+// Auf Touch-Geräten ist die Trefferfläche größer (Finger statt Mauszeiger).
 function hitTest(mx,my){
+  const maxD=Math.max(IS_TOUCH?30:0, (IS_TOUCH?32:22)*zoom);
+  let best=null, bestD=maxD;
   for(const atk of visibleAttacks()){
     const p3=rotate3D(worldPos3D(atk));
     const {sx,sy}=project(p3);
     if(SATELLITE_MODE ? behindGlobe(p3) : p3.z<0) continue;
-    if(Math.hypot(mx-sx,my-sy)<22*zoom) return atk;
+    const d=Math.hypot(mx-sx,my-sy);
+    if(d<bestD){ bestD=d; best=atk; }
   }
-  return null;
+  return best;
 }
 
 function openPanel(atk){
@@ -1136,12 +1203,22 @@ function openPanel(atk){
   document.getElementById('p-desc').textContent=atk.desc;
   ['pf-layer','pf-cat','pf-sev','pf-proto'].forEach(id=>{ document.getElementById(id).style.borderLeftColor=col; });
   document.getElementById('detail-panel').classList.add('visible');
+  selectedNode=atk.id;
   autoRotate=false;
 }
-function closePanel(){ document.getElementById('detail-panel').classList.remove('visible'); hoveredNode=null; autoRotate=true; }
+function closePanel(){ document.getElementById('detail-panel').classList.remove('visible'); hoveredNode=null; selectedNode=null; autoRotate=true; }
+
+// Hover laufend neu bestimmen – die Satelliten bewegen sich auch bei ruhender Maus
+function updateHover(){
+  if(!mouseInside || dragging) return;
+  const hit=hitTest(mouseX,mouseY);
+  hoveredNode=hit?hit.id:null;
+  canvas.style.cursor=hit?'pointer':'grab';
+}
 
 canvas.addEventListener('mousedown',e=>{ dragging=true; dragMoved=false; lastMX=e.clientX; lastMY=e.clientY; autoRotate=false; });
 canvas.addEventListener('mousemove',e=>{
+  mouseX=e.clientX; mouseY=e.clientY; mouseInside=true;
   if(dragging){
     const dx=e.clientX-lastMX, dy=e.clientY-lastMY;
     if(Math.hypot(dx,dy)>2) dragMoved=true;
@@ -1149,11 +1226,15 @@ canvas.addEventListener('mousemove',e=>{
     rotX=Math.max(-1.4,Math.min(1.4,rotX));
     lastMX=e.clientX; lastMY=e.clientY;
   } else {
-    const hit=hitTest(e.clientX,e.clientY);
-    hoveredNode=hit?hit.id:null;
-    canvas.style.cursor=hit?'pointer':'grab';
+    updateHover();
   }
 });
+canvas.addEventListener('mouseleave',()=>{
+  mouseInside=false; hoveredNode=null;
+  // Ziehen über den Rand hinaus sauber beenden, sonst bleibt der Globus "kleben"
+  if(dragging){ dragging=false; if(selectedNode===null) autoRotate=true; }
+});
+window.addEventListener('keydown',e=>{ if(e.key==='Escape') closePanel(); });
 canvas.addEventListener('mouseup',e=>{
   if(!dragging) return;
   dragging=false;
@@ -1163,29 +1244,77 @@ canvas.addEventListener('mouseup',e=>{
     else { closePanel(); autoRotate=true; }
   }
 });
-canvas.addEventListener('wheel',e=>{ zoom*=e.deltaY>0?0.92:1.09; zoom=Math.max(0.45,Math.min(2.8,zoom)); });
-canvas.addEventListener('touchstart',e=>{ const t=e.touches[0]; dragging=true; dragMoved=false; lastMX=t.clientX; lastMY=t.clientY; autoRotate=false; });
-canvas.addEventListener('touchmove',e=>{ e.preventDefault(); const t=e.touches[0]; rotY+=(t.clientX-lastMX)*0.01; rotX+=(t.clientY-lastMY)*0.01; rotX=Math.max(-1.4,Math.min(1.4,rotX)); lastMX=t.clientX; lastMY=t.clientY; dragMoved=true; },{passive:false});
-canvas.addEventListener('touchend',()=>dragging=false);
+function clampZoom(){ zoom=Math.max(0.45,Math.min(2.8,zoom)); }
+// preventDefault: sonst scrollt die einbettende Seite mit, während der Globus zoomt
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); zoom*=e.deltaY>0?0.92:1.09; clampZoom(); },{passive:false});
 
-function loop(){
+// Touch: ein Finger dreht, zwei Finger zoomen (Pinch)
+let pinchDist=0, touchStartX=0, touchStartY=0;
+function touchDist(e){ return Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); }
+canvas.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){ pinchDist=touchDist(e); dragging=false; return; }
+  const t=e.touches[0]; dragging=true; dragMoved=false;
+  lastMX=touchStartX=t.clientX; lastMY=touchStartY=t.clientY; autoRotate=false;
+});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(e.touches.length===2){
+    const d=touchDist(e);
+    if(pinchDist>0){ zoom*=d/pinchDist; clampZoom(); }
+    pinchDist=d;
+    return;
+  }
+  if(!dragging) return;
+  const t=e.touches[0];
+  // kleines Zittern des Fingers zählt noch als Tippen, nicht als Ziehen
+  if(!dragMoved && Math.hypot(t.clientX-touchStartX,t.clientY-touchStartY)<8) return;
+  dragMoved=true;
+  rotY+=(t.clientX-lastMX)*0.01; rotX+=(t.clientY-lastMY)*0.01;
+  rotX=Math.max(-1.4,Math.min(1.4,rotX));
+  lastMX=t.clientX; lastMY=t.clientY;
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+  // Tippen selbst auswerten; preventDefault unterdrückt die nachgelagerten
+  // emulierten Maus-Events (sonst bliebe ein "Hover" an der Tippstelle hängen)
+  if(e.cancelable) e.preventDefault();
+  const wasTap = dragging && !dragMoved && e.touches.length===0;
+  dragging=false; pinchDist=0;
+  if(wasTap){
+    const hit=hitTest(touchStartX,touchStartY);
+    if(hit) openPanel(hit); else closePanel();
+  }
+  if(e.touches.length===0 && selectedNode===null) autoRotate=true;
+},{passive:false});
+canvas.addEventListener('touchcancel',()=>{ dragging=false; pinchDist=0; });
+
+// Sterne einmalig erzeugen (feste Farbe je Stern, kein Flackern)
+const STARS=[];
+for(let i=0;i<220;i++) STARS.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4,a:0.2+Math.random()*0.8,phase:Math.random()*Math.PI*2,hue:200+Math.random()*60});
+
+let lastT=performance.now();
+function loop(now){
   requestAnimationFrame(loop);
-  animFrame++;
-  if(autoRotate) rotY+=0.0025;
+  // Zeitbasiert animieren: gleiche Geschwindigkeit auf 60-, 120- und 144-Hz-Displays
+  if(typeof now!=='number') now=performance.now();
+  const dt=Math.max(0, Math.min(3,(now-lastT)/16.667));
+  lastT=now;
+  animFrame+=dt;
+  if(autoRotate) rotY+=0.0025*dt;
+
+  // weiche Überblendung Einzelbahnen <-> DA-Ringe
+  const target=showAll?1:0;
+  allBlend+=(target-allBlend)*Math.min(1,0.06*dt);
+  if(Math.abs(target-allBlend)<0.002) allBlend=target;
+
+  updateHover();
   ctx.clearRect(0,0,W,H);
 
-  if(animFrame===1){
-    window._stars=[];
-    for(let i=0;i<220;i++) window._stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4,a:0.2+Math.random()*0.8,phase:Math.random()*Math.PI*2});
+  for(const s of STARS){
+    ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
+    ctx.fillStyle=`hsl(${s.hue},80%,90%)`;
+    ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2); ctx.fill();
   }
-  if(window._stars){
-    for(const s of window._stars){
-      ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
-      ctx.fillStyle=`hsl(${200+Math.random()*60},80%,90%)`;
-      ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2); ctx.fill();
-    }
-    ctx.globalAlpha=1;
-  }
+  ctx.globalAlpha=1;
 
   drawGlobe();
   drawNodes();
