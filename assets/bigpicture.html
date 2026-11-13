@@ -38,7 +38,36 @@
   /* Großbild-Skalierung: --ui wird im Script aus der Viewport-Größe berechnet
      (Full HD = 1, 4K UHD = 2), damit die Bedienelemente auf dem
      86"-4K-Display (iiyama ProLite TE8603MIS) nicht winzig bleiben. */
-  #header, #teams, #counter, #detail-panel, #hint { zoom: var(--ui, 1); }
+  #header, #teams, #counter, #detail-panel, #hint, #lite-toggle { zoom: var(--ui, 1); }
+
+  /* Leicht-Modus: keine Live-Unschärfe hinter Bedienelementen (die müsste über dem
+     bewegten Globus in jedem Bild neu berechnet werden), kein Vollbild-Scanline-Overlay,
+     keine Endlos-Animation. Fast deckende Hintergründe erhalten den Look. */
+  body.lite::before { display:none; }
+  body.lite .logo-icon { animation:none; box-shadow:0 0 18px rgba(0,200,255,0.6); }
+  body.lite .team-badge,
+  body.lite .count-box,
+  body.lite #detail-panel { backdrop-filter:none; -webkit-backdrop-filter:none; }
+  body.lite .team-badge { background:rgba(0,14,32,0.94); transition:border-color 0.2s, opacity 0.2s; }
+  body.lite .team-badge.is-active { background:rgba(0,30,55,0.97); }
+  body.lite .count-box { background:rgba(0,14,32,0.95); }
+  body.lite #detail-panel { background:rgba(0,10,25,0.985); }
+
+  /* Leicht-Modus-Schalter unten rechts */
+  #lite-toggle {
+    position:fixed; bottom:20px; right:20px; z-index:110;
+    display:flex; align-items:center; gap:8px;
+    padding:9px 14px; border-radius:4px; cursor:pointer;
+    font-family:'Share Tech Mono', monospace; font-size:10.5px; letter-spacing:1.5px;
+    color:#c8e8ff; background:rgba(0,15,35,0.85);
+    border:1px solid rgba(0,200,255,0.35);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  #lite-toggle:hover { border-color:var(--accent); box-shadow:var(--glow); }
+  #lite-toggle .lt-dot { width:9px; height:9px; border-radius:50%; background:rgba(200,232,255,0.3); flex-shrink:0; }
+  #lite-toggle.is-on { border-color:var(--gold); color:#ffd98a; background:rgba(197,131,18,0.16); }
+  #lite-toggle.is-on .lt-dot { background:var(--gold); }
+  #lite-toggle:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
   #header {
     position:fixed; top:0; left:0; right:0; z-index:100;
@@ -164,7 +193,7 @@
   }
 
   #hint {
-    position:fixed; bottom:20px; right:20px; z-index:100;
+    position:fixed; bottom:64px; right:20px; z-index:100;
     font-family:'Share Tech Mono', monospace; font-size:9px;
     color:rgba(0,200,255,0.3); text-align:right; line-height:2;
   }
@@ -201,6 +230,7 @@
     .count-num { font-size:22px; }
     .count-label { font-size:8px; letter-spacing:1px; }
     #hint { display:none; }
+    #lite-toggle { bottom:12px; right:12px; padding:10px 12px; font-size:9.5px; letter-spacing:1px; }
 
     /* Detailkarte: volle Breite, begrenzte Höhe, scrollbar */
     #detail-panel {
@@ -254,6 +284,10 @@
 </div>
 
 <div id="hint">KLICK TEAM → Filter<br>KLICK SATELLIT → Details · ESC → Schließen<br>DRAG → Drehen · SCROLL / PINCH → Zoom</div>
+
+<button id="lite-toggle" type="button" aria-pressed="false" title="Weniger Effekte für schwache Geräte – Bedienung bleibt gleich">
+  <span class="lt-dot"></span><span class="lt-label">LEICHT-MODUS: AUS</span>
+</button>
 
 <script>
 // ─── TEAMS (DA-Gruppen) ─────────────────────────────────────────────────────
@@ -523,10 +557,17 @@ function topNOfTeam(team, n){
   return showcase.concat(rest).slice(0,n);
 }
 
+// Ergebnis merken, bis sich der Filter ändert (wird mehrmals pro Bild abgefragt)
+let _visKey=null, _visList=null;
 function visibleAttacks(){
-  if(showAll) return ATTACKS;
-  if(selectedTeam) return ATTACKS.filter(a=>a.team===selectedTeam);
-  return TEAM_ORDER.flatMap(team=>topNOfTeam(team, PER_TEAM_DEFAULT));
+  const key=(showAll?'ALL':'')+'|'+(selectedTeam||'');
+  if(key===_visKey) return _visList;
+  let list;
+  if(showAll) list=ATTACKS;
+  else if(selectedTeam) list=ATTACKS.filter(a=>a.team===selectedTeam);
+  else list=TEAM_ORDER.flatMap(team=>topNOfTeam(team, PER_TEAM_DEFAULT));
+  _visKey=key; _visList=list;
+  return list;
 }
 
 function buildTeamPanel(){
@@ -619,6 +660,17 @@ const QS = new URLSearchParams(location.search);
 const DEBUG = QS.get('debug')==='1';
 const BIG_ANDROID = IS_ANDROID && Math.max(screen.width||0, screen.height||0) >= 1600; // Großdisplay, kein Handy
 let maxPixels = (IS_IIYAMA || BIG_ANDROID) ? 1600*900 : (IS_ANDROID ? 1920*1080 : 3840*2160);
+
+// ── Leicht-Modus ──────────────────────────────────────────────────────────
+// Spart Rechenleistung für schwache Geräte: kleinere Zeichenfläche, max. 30 fps,
+// keine Glow-/Verlaufs-Effekte, weniger Sterne und Details. Die Bedienung
+// (drehen, zoomen, tippen, filtern) bleibt vollständig gleich.
+// Gemerkte Wahl > ?lite=1/0 in der URL > automatisch an auf Android-Großdisplays.
+let LITE = IS_IIYAMA || BIG_ANDROID;
+try{ const v=localStorage.getItem('bp-lite'); if(v!==null) LITE = v==='1'; }catch(e){}
+if(QS.get('lite')==='1') LITE=true;
+if(QS.get('lite')==='0') LITE=false;
+const LITE_MAX_PIXELS = 1280*720;
 let renderScale=1;       // Zeichenpixel je CSS-Pixel
 let blankCheckAt=20, blankRetries=0, blankState='offen';
 let lastError='';
@@ -634,7 +686,8 @@ function resize(){
   // Grafik eingebauter Android-Systeme (Canvas bleibt leer oder ruckelt stark).
   // CSS streckt die kleinere Zeichenfläche wieder auf die volle Fläche.
   let dpr=Math.min(window.devicePixelRatio||1, 2);
-  if(W*H*dpr*dpr>maxPixels) dpr=Math.sqrt(maxPixels/(W*H));
+  const budget = LITE ? Math.min(maxPixels, LITE_MAX_PIXELS) : maxPixels;
+  if(W*H*dpr*dpr>budget) dpr=Math.sqrt(budget/(W*H));
   renderScale=dpr; blankCheckAt=animFrame+20;
   canvas.width=Math.max(1,Math.round(W*dpr)); canvas.height=Math.max(1,Math.round(H*dpr));
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
@@ -743,12 +796,26 @@ function drawGlobe(){
   const r=R*zoom;
   const filterCol = selectedTeam ? TEAMS[selectedTeam].color : null;
 
+  // Leicht-Modus: Globus nur als einfarbig blaue Kugel mit dünnem Rand –
+  // keine Kontinente, kein Gitter, keine Verläufe (spart den Großteil der Rechenzeit).
+  // Die Satelliten werden weiterhin korrekt hinter der Kugel verdeckt.
+  if(LITE){
+    ctx.fillStyle='#14306e';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=(filterCol || '#00c8ff')+'99';
+    ctx.lineWidth=(filterCol?2.6:2)*UIS;
+    ctx.stroke();
+    return;
+  }
+
   // Deep space background glow around globe
-  const spaceglow = ctx.createRadialGradient(cx,cy,r*0.6, cx,cy,r*2.2);
-  spaceglow.addColorStop(0,'rgba(0,40,80,0.0)');
-  spaceglow.addColorStop(0.5,'rgba(0,20,50,0.12)');
-  spaceglow.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=spaceglow; ctx.beginPath(); ctx.arc(cx,cy,r*2.2,0,Math.PI*2); ctx.fill();
+  if(!LITE){
+    const spaceglow = ctx.createRadialGradient(cx,cy,r*0.6, cx,cy,r*2.2);
+    spaceglow.addColorStop(0,'rgba(0,40,80,0.0)');
+    spaceglow.addColorStop(0.5,'rgba(0,20,50,0.12)');
+    spaceglow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=spaceglow; ctx.beginPath(); ctx.arc(cx,cy,r*2.2,0,Math.PI*2); ctx.fill();
+  }
 
   // Atmosphere — tinted toward the active team color when filtered
   const atm=ctx.createRadialGradient(cx,cy,r*0.88, cx,cy,r*1.3);
@@ -778,7 +845,7 @@ function drawGlobe(){
   ctx.lineWidth=0.5;
   for(const lat of GRID_LATS){
     ctx.beginPath(); let first=true;
-    for(let lon=-180;lon<=180;lon+=3){
+    for(let lon=-180;lon<=180;lon+=(LITE?6:3)){
       const {sx,sy,z}=project(rotate3D(latLonTo3D(lat,lon)));
       if(z<-0.05){first=true;continue;}
       first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
@@ -787,7 +854,7 @@ function drawGlobe(){
   }
   for(const lon of GRID_LONS){
     ctx.beginPath(); let first=true;
-    for(let lat=-90;lat<=90;lat+=3){
+    for(let lat=-90;lat<=90;lat+=(LITE?6:3)){
       const {sx,sy,z}=project(rotate3D(latLonTo3D(lat,lon)));
       if(z<-0.05){first=true;continue;}
       first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy); first=false;
@@ -821,12 +888,12 @@ function drawGlobe(){
     ctx.fill();
     ctx.strokeStyle=palette.edge;
     ctx.lineWidth=0.9;
-    ctx.shadowColor=palette.edge; ctx.shadowBlur=4;
+    if(!LITE){ ctx.shadowColor=palette.edge; ctx.shadowBlur=4; }
     ctx.stroke();
     ctx.shadowBlur=0;
 
     // Platinen-Leiterbahnen innerhalb der Landmasse (Cybersec-Look)
-    if(pts.length>=4 && maxX>minX && maxY>minY){
+    if(!LITE && pts.length>=4 && maxX>minX && maxY>minY){
       ctx.save();
       ctx.clip();
       ctx.strokeStyle=palette.edge.replace(/[\d.]+\)$/,'0.3)');
@@ -857,18 +924,20 @@ function drawGlobe(){
     ctx.fill();
   }
 
-  // Specular highlight
-  const spec=ctx.createRadialGradient(cx-r*0.35,cy-r*0.38,0, cx-r*0.2,cy-r*0.2,r*0.7);
-  spec.addColorStop(0,'rgba(180,230,255,0.18)');
-  spec.addColorStop(0.4,'rgba(100,180,255,0.05)');
-  spec.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=spec; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  if(!LITE){
+    // Specular highlight
+    const spec=ctx.createRadialGradient(cx-r*0.35,cy-r*0.38,0, cx-r*0.2,cy-r*0.2,r*0.7);
+    spec.addColorStop(0,'rgba(180,230,255,0.18)');
+    spec.addColorStop(0.4,'rgba(100,180,255,0.05)');
+    spec.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=spec; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
 
-  // Soft vignette toward the rim for more depth
-  const vig=ctx.createRadialGradient(cx,cy,r*0.7, cx,cy,r);
-  vig.addColorStop(0,'rgba(0,0,0,0)');
-  vig.addColorStop(1,'rgba(0,0,0,0.28)');
-  ctx.fillStyle=vig; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+    // Soft vignette toward the rim for more depth
+    const vig=ctx.createRadialGradient(cx,cy,r*0.7, cx,cy,r);
+    vig.addColorStop(0,'rgba(0,0,0,0)');
+    vig.addColorStop(1,'rgba(0,0,0,0.28)');
+    ctx.fillStyle=vig; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  }
 
   ctx.restore();
 
@@ -899,77 +968,113 @@ function drawShape(type, x, y, r, ctx){
   }
 }
 
-// Zeichnet einen kleinen Satelliten: Korpus + zwei Solarpaneele + Antenne.
-// col/glow = Teamfarbe, damit die DAs weiterhin unterscheidbar bleiben.
-function drawSatellite(sx, sy, R, col, glow, isHov, seed){
-  ctx.save();
-  ctx.translate(sx, sy);
-  // sanftes Taumeln, pro Knoten leicht versetzt
-  const ang = Math.sin(animFrame*0.02 + seed*1.3)*0.2 + (seed%6.283)*0.5;
-  ctx.rotate(ang);
-
+// Zeichnet die Satelliten-Form (Korpus + zwei Solarpaneele + Antenne) am Ursprung
+// in den Kontext g – ohne Drehung. col/glow = Teamfarbe, damit die DAs unterscheidbar bleiben.
+function drawSatelliteShape(g, R, col, glow, isHov){
   const bodyW = R*1.05, bodyH = R*0.8;
   const panelW = R*1.25, panelH = R*0.9;
   const arm = R*0.35;
   const edge = col + (isHov ? 'ff' : 'cc');
 
   // ── Trägerarme zu den Paneelen ──
-  ctx.strokeStyle = edge;
-  ctx.lineWidth = Math.max(1, R*0.14);
-  ctx.beginPath();
-  ctx.moveTo(-bodyW/2, 0); ctx.lineTo(-bodyW/2-arm, 0);
-  ctx.moveTo( bodyW/2, 0); ctx.lineTo( bodyW/2+arm, 0);
-  ctx.stroke();
+  g.strokeStyle = edge;
+  g.lineWidth = Math.max(1, R*0.14);
+  g.beginPath();
+  g.moveTo(-bodyW/2, 0); g.lineTo(-bodyW/2-arm, 0);
+  g.moveTo( bodyW/2, 0); g.lineTo( bodyW/2+arm, 0);
+  g.stroke();
 
   // ── Solarpaneele (links & rechts) mit Zellraster ──
   function panel(sign){
     const x0 = sign*(bodyW/2+arm), y0 = -panelH/2;
     const px = sign>0 ? x0 : x0-panelW;
-    const grad = ctx.createLinearGradient(px, y0, px, y0+panelH);
+    const grad = g.createLinearGradient(px, y0, px, y0+panelH);
     grad.addColorStop(0, '#12365e');
     grad.addColorStop(1, '#06182f');
-    ctx.fillStyle = grad;
-    ctx.fillRect(px, y0, panelW, panelH);
+    g.fillStyle = grad;
+    g.fillRect(px, y0, panelW, panelH);
     // Rasterlinien in Teamfarbe
-    ctx.strokeStyle = col + '55';
-    ctx.lineWidth = Math.max(0.5, R*0.04);
-    for(let c=1;c<3;c++){ const gx=px+panelW*c/3; ctx.beginPath(); ctx.moveTo(gx,y0); ctx.lineTo(gx,y0+panelH); ctx.stroke(); }
-    ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px+panelW,0); ctx.stroke();
+    g.strokeStyle = col + '55';
+    g.lineWidth = Math.max(0.5, R*0.04);
+    for(let c=1;c<3;c++){ const gx=px+panelW*c/3; g.beginPath(); g.moveTo(gx,y0); g.lineTo(gx,y0+panelH); g.stroke(); }
+    g.beginPath(); g.moveTo(px,0); g.lineTo(px+panelW,0); g.stroke();
     // Rahmen
-    ctx.strokeStyle = edge;
-    ctx.lineWidth = Math.max(0.8, R*0.08);
-    ctx.strokeRect(px, y0, panelW, panelH);
+    g.strokeStyle = edge;
+    g.lineWidth = Math.max(0.8, R*0.08);
+    g.strokeRect(px, y0, panelW, panelH);
   }
   panel(-1); panel(1);
 
   // ── Korpus (metallisch) ──
-  const bg = ctx.createLinearGradient(0,-bodyH/2,0,bodyH/2);
+  const bg = g.createLinearGradient(0,-bodyH/2,0,bodyH/2);
   bg.addColorStop(0, isHov ? '#ffffff' : '#d7e6f5');
   bg.addColorStop(1, '#5c7487');
-  ctx.fillStyle = bg;
+  g.fillStyle = bg;
   const bx=-bodyW/2, by=-bodyH/2, br=R*0.18;
-  ctx.beginPath();
-  ctx.moveTo(bx+br,by);
-  ctx.arcTo(bx+bodyW,by,bx+bodyW,by+bodyH,br);
-  ctx.arcTo(bx+bodyW,by+bodyH,bx,by+bodyH,br);
-  ctx.arcTo(bx,by+bodyH,bx,by,br);
-  ctx.arcTo(bx,by,bx+bodyW,by,br);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, R*0.1); ctx.stroke();
+  g.beginPath();
+  g.moveTo(bx+br,by);
+  g.arcTo(bx+bodyW,by,bx+bodyW,by+bodyH,br);
+  g.arcTo(bx+bodyW,by+bodyH,bx,by+bodyH,br);
+  g.arcTo(bx,by+bodyH,bx,by,br);
+  g.arcTo(bx,by,bx+bodyW,by,br);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = edge; g.lineWidth = Math.max(1, R*0.1); g.stroke();
 
   // ── Antenne / Parabolschüssel oben ──
-  ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, R*0.1);
-  ctx.beginPath(); ctx.moveTo(0,-bodyH/2); ctx.lineTo(0,-bodyH/2-R*0.45); ctx.stroke();
-  ctx.fillStyle = col;
-  ctx.beginPath(); ctx.arc(0,-bodyH/2-R*0.55, R*0.22, 0, Math.PI*2); ctx.fill();
+  g.strokeStyle = edge; g.lineWidth = Math.max(1, R*0.1);
+  g.beginPath(); g.moveTo(0,-bodyH/2); g.lineTo(0,-bodyH/2-R*0.45); g.stroke();
+  g.fillStyle = col;
+  g.beginPath(); g.arc(0,-bodyH/2-R*0.55, R*0.22, 0, Math.PI*2); g.fill();
 
   // ── Leuchtendes "Auge" im Korpus ──
-  ctx.fillStyle = isHov ? '#ffffff' : col;
-  ctx.shadowColor = glow; ctx.shadowBlur = (isHov?12:6);
-  ctx.beginPath(); ctx.arc(0,0,R*0.18,0,Math.PI*2); ctx.fill();
-  ctx.shadowBlur = 0;
+  g.fillStyle = isHov ? '#ffffff' : col;
+  g.shadowColor = glow; g.shadowBlur = (isHov?12:6);
+  g.beginPath(); g.arc(0,0,R*0.18,0,Math.PI*2); g.fill();
+  g.shadowBlur = 0;
+}
 
+// Leicht-Modus: Jeder Satellit wird EINMAL mit allen Effekten (Verläufe, Glow,
+// leuchtender Hof) in ein kleines Offscreen-Bild gezeichnet und danach nur noch
+// gestempelt – 1 drawImage statt ~15 Zeichenbefehle. Sieht fast gleich aus.
+const satSprites=new Map();
+function getSatSprite(R, haloR, col, glow, isHov){
+  const q=v=>Math.max(1, Math.round(v*2)/2);   // auf 0,5 px runden -> wenige Varianten
+  R=q(R); haloR=q(haloR);
+  const sc=renderScale;
+  const key=col+'|'+(isHov?1:0)+'|'+R+'|'+haloR+'|'+sc.toFixed(2);
+  let sp=satSprites.get(key);
+  if(sp) return sp;
+  if(satSprites.size>300) satSprites.clear();
+  const half=Math.max(haloR, R*2.3 + (isHov?12:6));
+  const px=Math.ceil(half*2*sc)+2;
+  const c=document.createElement('canvas'); c.width=c.height=px;
+  const g=c.getContext('2d');
+  g.setTransform(sc,0,0,sc,px/2,px/2);
+  const hg=g.createRadialGradient(0,0,0,0,0,haloR);
+  hg.addColorStop(0,glow); hg.addColorStop(0.5,glow.replace('0.7','0.2')); hg.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=hg; g.beginPath(); g.arc(0,0,haloR,0,Math.PI*2); g.fill();
+  drawSatelliteShape(g, R, col, glow, isHov);
+  sp={c, half:px/2/sc, size:px/sc};
+  satSprites.set(key, sp);
+  return sp;
+}
+
+function drawSatellite(sx, sy, R, col, glow, isHov, seed, haloR){
+  // sanftes Taumeln, pro Knoten leicht versetzt
+  const ang = Math.sin(animFrame*0.02 + seed*1.3)*0.2 + (seed%6.283)*0.5;
+  if(LITE){
+    const sp=getSatSprite(R, haloR, col, glow, isHov);
+    const cs=Math.cos(ang), sn=Math.sin(ang), d=renderScale;
+    ctx.setTransform(d*cs, d*sn, -d*sn, d*cs, d*sx, d*sy);
+    ctx.drawImage(sp.c, -sp.half, -sp.half, sp.size, sp.size);
+    ctx.setTransform(d,0,0,d,0,0);
+    return;
+  }
+  ctx.save();
+  ctx.translate(sx, sy);
+  ctx.rotate(ang);
+  drawSatelliteShape(ctx, R, col, glow, isHov);
   ctx.restore();
 }
 
@@ -1049,18 +1154,18 @@ function worldPos3D(atk){
 function behindGlobe(p3){ return p3.z<0 && Math.hypot(p3.x,p3.y)<1.0; }
 
 // Zeichnet eine Umlaufbahn als dünne Linie (Teil hinter der Kugel wird ausgeblendet)
-function drawOrbit(o, col){
+// Hängt eine Umlaufbahn an den aktuellen Pfad an (Teil hinter der Kugel wird ausgeblendet)
+function traceOrbit(o){
   const r=R*zoom;
-  ctx.beginPath();
   let pen=false;
-  for(let s=0;s<=72;s++){
-    const th=(s/72)*Math.PI*2;
+  const steps=LITE?36:72;
+  for(let s=0;s<=steps;s++){
+    const th=(s/steps)*Math.PI*2;
     const p3=rotate3D(satPointAtAngle(o, th));
     if(behindGlobe(p3)){ pen=false; continue; }
     const sx=cx+p3.x*r, sy=cy-p3.y*r;
     pen?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy); pen=true;
   }
-  ctx.strokeStyle=col+'2a'; ctx.lineWidth=UIS; ctx.stroke();
 }
 
 function drawNodes(){
@@ -1086,12 +1191,21 @@ function drawNodes(){
   if(SATELLITE_MODE){
     // Umlaufbahnen hinter die Satelliten zeichnen (jede Bahn nur einmal,
     // im "Alle"-Modus teilen sich alle Satelliten einer DA eine Bahn)
-    const drawnOrbits=new Set();
+    // Bahnen gleicher Farbe in EINEM Pfad sammeln -> 1 Strich-Befehl pro DA statt pro Bahn
+    const drawnOrbits=new Set(), byColor=new Map();
     for(const n of nodes2d){
       const o=getOrbit(n.atk);
       if(drawnOrbits.has(o)) continue;
       drawnOrbits.add(o);
-      drawOrbit(o, TEAMS[n.atk.team].color);
+      const c=TEAMS[n.atk.team].color;
+      if(!byColor.has(c)) byColor.set(c,[]);
+      byColor.get(c).push(o);
+    }
+    ctx.lineWidth=UIS;
+    for(const [c,orbits] of byColor){
+      ctx.beginPath();
+      for(const o of orbits) traceOrbit(o);
+      ctx.strokeStyle=c+'2a'; ctx.stroke();
     }
   } else {
     // Team connection lines (alte Konstellations-Linien)
@@ -1122,13 +1236,20 @@ function drawNodes(){
 
     // Outer pulse ring
     const ringR=(baseR+pulse+14)*zs;
-    const g=ctx.createRadialGradient(sx,sy,0,sx,sy,ringR);
-    g.addColorStop(0,glow); g.addColorStop(0.5,glow.replace('0.7','0.2')); g.addColorStop(1,'transparent');
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,ringR,0,Math.PI*2); ctx.fill();
+    if(LITE && SATELLITE_MODE){
+      // Hof ist im vorgezeichneten Satelliten-Bild enthalten (siehe getSatSprite)
+    } else if(LITE){
+      ctx.fillStyle=glow.replace('0.7','0.14');
+      ctx.beginPath(); ctx.arc(sx,sy,ringR*0.7,0,Math.PI*2); ctx.fill();
+    } else {
+      const g=ctx.createRadialGradient(sx,sy,0,sx,sy,ringR);
+      g.addColorStop(0,glow); g.addColorStop(0.5,glow.replace('0.7','0.2')); g.addColorStop(1,'transparent');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,ringR,0,Math.PI*2); ctx.fill();
+    }
 
     if(SATELLITE_MODE){
       // TEST: Satelliten-Darstellung
-      drawSatellite(sx, sy, baseR*zs, col, glow, isHov, atk.id);
+      drawSatellite(sx, sy, baseR*zs, col, glow, isHov, atk.id, (baseR+14)*zs);
     } else {
       // Animated outer ring stroke
       ctx.save();
@@ -1168,7 +1289,7 @@ function drawNodes(){
       ctx.font=`${isHov?'bold ':''} ${Math.round(11*zs)}px 'Exo 2', sans-serif`;
       ctx.fillStyle=col;
       ctx.textAlign='center';
-      ctx.shadowColor=col; ctx.shadowBlur=isHov?18:8;
+      if(!LITE){ ctx.shadowColor=col; ctx.shadowBlur=isHov?18:8; }
       ctx.fillText(atk.name, sx, sy-(baseR+12)*zs);
       ctx.shadowBlur=0;
       if(isHov){
@@ -1188,6 +1309,18 @@ function drawNodes(){
 // Lesbare Labels für den "Alle DA"-Modus: dunkle Hinterlegung, helle Schrift,
 // Rahmen in Teamfarbe. Vordere Satelliten haben Vorrang; überlappende Labels
 // weiter hinten werden ausgelassen (gehovertes Label wird immer gezeigt).
+// Textbreiten zwischenspeichern – measureText ist teuer und die Namen ändern sich nie
+const textWidthCache=new Map();
+function textWidth(str){
+  const k=ctx.font+'|'+str;
+  let w=textWidthCache.get(k);
+  if(w===undefined){
+    w=ctx.measureText(str).width;
+    if(textWidthCache.size>3000) textWidthCache.clear();
+    textWidthCache.set(k,w);
+  }
+  return w;
+}
 function drawAllLabels(queue){
   queue.sort((a,b)=> (b.isHov-a.isHov) || (b.z-a.z));
   const placed=[];
@@ -1197,7 +1330,7 @@ function drawAllLabels(queue){
   ctx.font=`500 ${fs}px 'Exo 2', sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   for(const L of queue){
-    const w=ctx.measureText(L.atk.name).width + 10*UIS;
+    const w=textWidth(L.atk.name) + 10*UIS;
     const h=fs + 6*UIS;
     const x=L.sx - w/2;
     const y=L.sy - (L.baseR+10)*zs - h;
@@ -1378,11 +1511,37 @@ function updateDebug(){
     '\nUA: '+UA;
 }
 
+// Schalter für den Leicht-Modus (Wahl wird im Browser gemerkt)
+const liteBtn=document.getElementById('lite-toggle');
+function refreshLiteBtn(){
+  if(!liteBtn) return;
+  liteBtn.classList.toggle('is-on', LITE);
+  liteBtn.setAttribute('aria-pressed', LITE?'true':'false');
+  liteBtn.querySelector('.lt-label').textContent = 'LEICHT-MODUS: '+(LITE?'AN':'AUS');
+}
+function applyLiteClass(){ document.body.classList.toggle('lite', LITE); }
+function setLite(on){
+  LITE=on;
+  try{ localStorage.setItem('bp-lite', on?'1':'0'); }catch(e){}
+  if(!on) maxPixels=(IS_IIYAMA || BIG_ANDROID) ? 1600*900 : (IS_ANDROID ? 1920*1080 : 3840*2160);
+  perfAcc=0; perfN=0;
+  resize();
+  refreshLiteBtn();
+  applyLiteClass();
+}
+if(liteBtn){
+  liteBtn.addEventListener('click', ()=>setLite(!LITE));
+  refreshLiteBtn();
+}
+applyLiteClass();
+
 let lastT=performance.now();
 function loop(now){
   requestAnimationFrame(loop);
   // Zeitbasiert animieren: gleiche Geschwindigkeit auf 60-, 120- und 144-Hz-Displays
   if(typeof now!=='number') now=performance.now();
+  // Leicht-Modus: höchstens ~30 Bilder pro Sekunde zeichnen (Eingaben laufen unabhängig weiter)
+  if(LITE && now-lastT<30) return;
   const rawDt=now-lastT;
   const dt=Math.max(0, Math.min(3,rawDt/16.667));
   lastT=now;
@@ -1407,10 +1566,19 @@ function loop(now){
   updateHover();
   ctx.clearRect(0,0,W,H);
 
-  for(const s of STARS){
-    ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
-    ctx.fillStyle=`hsl(${s.hue},80%,90%)`;
-    ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r*UIS,0,Math.PI*2); ctx.fill();
+  if(LITE){
+    // 70 statische Sterne als Quadrate, eine Farbe – kein Funkeln, keine Kreise
+    ctx.fillStyle='rgba(200,230,255,0.45)';
+    for(let i=0;i<70;i++){
+      const s=STARS[i], d=Math.max(1,s.r*1.4)*UIS;
+      ctx.fillRect(s.x*W,s.y*H,d,d);
+    }
+  } else {
+    for(const s of STARS){
+      ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
+      ctx.fillStyle=`hsl(${s.hue},80%,90%)`;
+      ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r*UIS,0,Math.PI*2); ctx.fill();
+    }
   }
   ctx.globalAlpha=1;
 
