@@ -33,7 +33,12 @@
     background-size: 60px 60px; pointer-events:none; z-index:0;
   }
   #canvas-wrapper { position:fixed; inset:0; z-index:1; }
-  canvas { display:block; }
+  canvas { display:block; touch-action:none; }
+
+  /* Großbild-Skalierung: --ui wird im Script aus der Viewport-Größe berechnet
+     (Full HD = 1, 4K UHD = 2), damit die Bedienelemente auf dem
+     86"-4K-Display (iiyama ProLite TE8603MIS) nicht winzig bleiben. */
+  #header, #teams, #counter, #detail-panel, #hint { zoom: var(--ui, 1); }
 
   #header {
     position:fixed; top:0; left:0; right:0; z-index:100;
@@ -595,6 +600,8 @@ let animFrame=0;
 let autoRotate=true;
 let allBlend=0;          // 0 = Einzelbahnen, 1 = DA-Ringe ("Alle"-Modus), weich überblendet
 let mouseX=0, mouseY=0, mouseInside=false;
+let UIS=1;               // UI-Skalierung für große Viewports (siehe resize)
+const UI_BOOST=(()=>{ const v=parseFloat(new URLSearchParams(location.search).get('scale')); return v>=0.5&&v<=4 ? v : 1; })();
 
 // Canvas in Gerätepixeln rendern (scharf auf HiDPI-Displays), gerechnet wird in CSS-Pixeln
 function resize(){
@@ -605,8 +612,17 @@ function resize(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   // auf schmalen Displays den Globus etwas größer – die Seitenleisten entfallen dort
   cx=W/2; cy=H/2; R=Math.min(W,H)*(W<720?0.31:0.28);
+
+  // Großbild-Skalierung (z. B. iiyama ProLite TE8603MIS, 86" 4K UHD 3840×2160):
+  // Bezugsgröße ist Full HD. Ist der Viewport größer, wachsen Bedienelemente,
+  // Schrift und Satelliten proportional mit – bei 3840×2160 also Faktor 2.
+  // Feinjustierung am Gerät per URL: bigpicture.html?scale=1.2
+  UIS=Math.max(1, Math.min(W/1920, H/1080))*UI_BOOST;
+  document.documentElement.style.setProperty('--ui', UIS.toFixed(3));
 }
-const IS_TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+let IS_TOUCH = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+// Touch-Displays mit angeschlossener Maus melden oft "fine" – beim ersten Touch umschalten
+window.addEventListener('touchstart',()=>{ IS_TOUCH=true; },{passive:true, once:true});
 resize(); window.addEventListener('resize',resize);
 
 function latLonTo3D(lat,lon){
@@ -1015,11 +1031,12 @@ function drawOrbit(o, col){
     const sx=cx+p3.x*r, sy=cy-p3.y*r;
     pen?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy); pen=true;
   }
-  ctx.strokeStyle=col+'2a'; ctx.lineWidth=1; ctx.stroke();
+  ctx.strokeStyle=col+'2a'; ctx.lineWidth=UIS; ctx.stroke();
 }
 
 function drawNodes(){
   const list=visibleAttacks();
+  const zs=zoom*UIS; // Größenfaktor für Satelliten/Schrift: Zoom × Großbild-Skalierung
   const nodes2d=[];
   for(const atk of list){
     const p3=rotate3D(worldPos3D(atk));
@@ -1075,29 +1092,29 @@ function drawNodes(){
     ctx.globalAlpha=alpha;
 
     // Outer pulse ring
-    const ringR=(baseR+pulse+14)*zoom;
+    const ringR=(baseR+pulse+14)*zs;
     const g=ctx.createRadialGradient(sx,sy,0,sx,sy,ringR);
     g.addColorStop(0,glow); g.addColorStop(0.5,glow.replace('0.7','0.2')); g.addColorStop(1,'transparent');
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,ringR,0,Math.PI*2); ctx.fill();
 
     if(SATELLITE_MODE){
       // TEST: Satelliten-Darstellung
-      drawSatellite(sx, sy, baseR*zoom, col, glow, isHov, atk.id);
+      drawSatellite(sx, sy, baseR*zs, col, glow, isHov, atk.id);
     } else {
       // Animated outer ring stroke
       ctx.save();
       ctx.strokeStyle=col+(isHov?'cc':'66');
-      ctx.lineWidth=(isHov?2.5:1.5)*zoom;
-      drawShape(shape,sx,sy,(baseR+6)*zoom,ctx);
+      ctx.lineWidth=(isHov?2.5:1.5)*zs;
+      drawShape(shape,sx,sy,(baseR+6)*zs,ctx);
       ctx.stroke(); ctx.restore();
 
       // Main node fill
       ctx.save();
-      const fillGrad=ctx.createRadialGradient(sx-baseR*0.3*zoom,sy-baseR*0.3*zoom,0,sx,sy,baseR*zoom);
+      const fillGrad=ctx.createRadialGradient(sx-baseR*0.3*zs,sy-baseR*0.3*zs,0,sx,sy,baseR*zs);
       fillGrad.addColorStop(0,isHov?'#ffffff':col+'ff');
       fillGrad.addColorStop(1,isHov?col+'bb':col+'99');
       ctx.fillStyle=fillGrad;
-      drawShape(shape,sx,sy,baseR*zoom,ctx);
+      drawShape(shape,sx,sy,baseR*zs,ctx);
       ctx.fill();
       ctx.strokeStyle=isHov?'#fff':col+'aa';
       ctx.lineWidth=isHov?2.5:1.5;
@@ -1105,7 +1122,7 @@ function drawNodes(){
 
       // Inner icon emoji
       ctx.save();
-      ctx.font=`${Math.round((baseR*0.9)*zoom)}px serif`;
+      ctx.font=`${Math.round((baseR*0.9)*zs)}px serif`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.globalAlpha=alpha*(isHov?1:0.9);
       ctx.fillStyle=isHov?col:'#fff';
@@ -1119,16 +1136,16 @@ function drawNodes(){
       if(alpha>0.35||isHov) labelQueue.push({atk,sx,sy,z:nd.z,alpha,col,baseR,isHov});
     } else if(alpha>0.35||isHov){
       ctx.save();
-      ctx.font=`${isHov?'bold ':''} ${Math.round(11*zoom)}px 'Exo 2', sans-serif`;
+      ctx.font=`${isHov?'bold ':''} ${Math.round(11*zs)}px 'Exo 2', sans-serif`;
       ctx.fillStyle=col;
       ctx.textAlign='center';
       ctx.shadowColor=col; ctx.shadowBlur=isHov?18:8;
-      ctx.fillText(atk.name, sx, sy-(baseR+12)*zoom);
+      ctx.fillText(atk.name, sx, sy-(baseR+12)*zs);
       ctx.shadowBlur=0;
       if(isHov){
-        ctx.font=`${Math.round(9*zoom)}px 'Share Tech Mono', monospace`;
+        ctx.font=`${Math.round(9*zs)}px 'Share Tech Mono', monospace`;
         ctx.fillStyle='rgba(200,232,255,0.65)';
-        ctx.fillText('['+atk.team+']', sx, sy-(baseR+25)*zoom);
+        ctx.fillText('['+atk.team+']', sx, sy-(baseR+25)*zs);
       }
       ctx.restore();
     }
@@ -1145,15 +1162,16 @@ function drawNodes(){
 function drawAllLabels(queue){
   queue.sort((a,b)=> (b.isHov-a.isHov) || (b.z-a.z));
   const placed=[];
-  const fs=Math.max(8, Math.round(9*zoom));
+  const zs=zoom*UIS;
+  const fs=Math.max(8*UIS, Math.round(9*zs));
   ctx.save();
   ctx.font=`500 ${fs}px 'Exo 2', sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   for(const L of queue){
-    const w=ctx.measureText(L.atk.name).width + 10;
-    const h=fs + 6;
+    const w=ctx.measureText(L.atk.name).width + 10*UIS;
+    const h=fs + 6*UIS;
     const x=L.sx - w/2;
-    const y=L.sy - (L.baseR+10)*zoom - h;
+    const y=L.sy - (L.baseR+10)*zs - h;
     const hit=placed.some(p=> x < p.x+p.w+4 && x+w+4 > p.x && y < p.y+p.h+2 && y+h+2 > p.y);
     if(hit && !L.isHov) continue;
     placed.push({x,y,w,h});
@@ -1178,7 +1196,8 @@ function drawAllLabels(queue){
 // Liefert den nächstgelegenen Satelliten unter dem Zeiger.
 // Auf Touch-Geräten ist die Trefferfläche größer (Finger statt Mauszeiger).
 function hitTest(mx,my){
-  const maxD=Math.max(IS_TOUCH?30:0, (IS_TOUCH?32:22)*zoom);
+  const zs=zoom*UIS;
+  const maxD=Math.max(IS_TOUCH?30*UIS:0, (IS_TOUCH?32:22)*zs);
   let best=null, bestD=maxD;
   for(const atk of visibleAttacks()){
     const p3=rotate3D(worldPos3D(atk));
@@ -1312,7 +1331,7 @@ function loop(now){
   for(const s of STARS){
     ctx.globalAlpha=s.a*(0.35+0.25*Math.sin(animFrame*0.018+s.phase));
     ctx.fillStyle=`hsl(${s.hue},80%,90%)`;
-    ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r*UIS,0,Math.PI*2); ctx.fill();
   }
   ctx.globalAlpha=1;
 
