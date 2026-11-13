@@ -155,6 +155,14 @@
   .field-val { font-size:12px; font-weight:600; color: #e0f4ff; }
   .panel-desc { font-size:12px; line-height:1.65; color: rgba(200,232,255,0.8); border-top:1px solid rgba(0,200,255,0.12); padding-top:10px; }
 
+  #debug-box {
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:10000;
+    max-width:86vw; padding:14px 18px; white-space:pre-wrap; word-break:break-word;
+    font-family:'Share Tech Mono', monospace; font-size:clamp(13px,1.3vw,30px); line-height:1.6;
+    color:#e8f6ff; background:rgba(2,11,22,0.92); border:1px solid #c58312; border-radius:6px;
+    pointer-events:none;
+  }
+
   #hint {
     position:fixed; bottom:20px; right:20px; z-index:100;
     font-family:'Share Tech Mono', monospace; font-size:9px;
@@ -600,14 +608,35 @@ let animFrame=0;
 let autoRotate=true;
 let allBlend=0;          // 0 = Einzelbahnen, 1 = DA-Ringe ("Alle"-Modus), weich überblendet
 let mouseX=0, mouseY=0, mouseInside=false;
+// ── Geräteerkennung ───────────────────────────────────────────────────────
+// Das iiyama ProLite TE8603MIS zeigt die Seite im eingebauten Android-Browser.
+// Dessen Grafikeinheit ist schwach, daher bekommen Android-Geräte ein kleineres
+// Pixelbudget für die Zeichenfläche. ?debug=1 blendet die erkannten Werte ein.
+const UA = navigator.userAgent || '';
+const IS_ANDROID = /Android/i.test(UA);
+const IS_IIYAMA = /iiyama|TE\d{4}MIS|ProLite/i.test(UA);
+const QS = new URLSearchParams(location.search);
+const DEBUG = QS.get('debug')==='1';
+const BIG_ANDROID = IS_ANDROID && Math.max(screen.width||0, screen.height||0) >= 1600; // Großdisplay, kein Handy
+let maxPixels = (IS_IIYAMA || BIG_ANDROID) ? 1600*900 : (IS_ANDROID ? 1920*1080 : 3840*2160);
+let renderScale=1;       // Zeichenpixel je CSS-Pixel
+let blankCheckAt=20, blankRetries=0, blankState='offen';
+let lastError='';
+window.addEventListener('error',e=>{ lastError=(e.message||'Fehler')+' @'+(e.lineno||'?'); });
 let UIS=1;               // UI-Skalierung für große Viewports (siehe resize)
-const UI_BOOST=(()=>{ const v=parseFloat(new URLSearchParams(location.search).get('scale')); return v>=0.5&&v<=4 ? v : 1; })();
+const UI_BOOST=(()=>{ const v=parseFloat(QS.get('scale')); return v>=0.5&&v<=4 ? v : 1; })();
 
 // Canvas in Gerätepixeln rendern (scharf auf HiDPI-Displays), gerechnet wird in CSS-Pixeln
 function resize(){
-  const dpr=Math.min(window.devicePixelRatio||1, 2);
-  W=window.innerWidth; H=window.innerHeight;
-  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  W=window.innerWidth||document.documentElement.clientWidth||1280;
+  H=window.innerHeight||document.documentElement.clientHeight||720;
+  // Zeichenfläche auf das Pixelbudget begrenzen: ein 4K-Canvas überfordert die
+  // Grafik eingebauter Android-Systeme (Canvas bleibt leer oder ruckelt stark).
+  // CSS streckt die kleinere Zeichenfläche wieder auf die volle Fläche.
+  let dpr=Math.min(window.devicePixelRatio||1, 2);
+  if(W*H*dpr*dpr>maxPixels) dpr=Math.sqrt(maxPixels/(W*H));
+  renderScale=dpr; blankCheckAt=animFrame+20;
+  canvas.width=Math.max(1,Math.round(W*dpr)); canvas.height=Math.max(1,Math.round(H*dpr));
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   // auf schmalen Displays den Globus etwas größer – die Seitenleisten entfallen dort
@@ -1310,13 +1339,63 @@ canvas.addEventListener('touchcancel',()=>{ dragging=false; pinchDist=0; });
 const STARS=[];
 for(let i=0;i<220;i++) STARS.push({x:Math.random(),y:Math.random(),r:Math.random()*1.4,a:0.2+Math.random()*0.8,phase:Math.random()*Math.PI*2,hue:200+Math.random()*60});
 
+let perfAcc=0, perfN=0, fpsNow=60;
+
+// Selbsttest: In der Bildmitte liegt immer der (deckende) Globus. Ist der Pixel
+// dort nach dem Zeichnen leer, konnte das Gerät die Zeichenfläche nicht darstellen
+// – dann schrittweise mit kleinerer Fläche erneut versuchen.
+function checkCanvasBlank(){
+  let blank=false;
+  try{
+    const d=ctx.getImageData(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1).data;
+    blank = d[3]===0;
+  }catch(err){ blankState='nicht prüfbar'; return; }
+  if(!blank){ blankState='ok'; return; }
+  if(blankRetries<5 && canvas.width*canvas.height>480*270){
+    blankRetries++; blankState='leer – Versuch '+blankRetries;
+    maxPixels=Math.max(480*270, canvas.width*canvas.height*0.5);
+    resize();
+  } else {
+    blankState='leer';
+  }
+}
+
+// Diagnose-Einblendung (?debug=1): zeigt, was die Seite über das Gerät erkennt
+let debugEl=null;
+if(DEBUG){
+  debugEl=document.createElement('div');
+  debugEl.id='debug-box';
+  document.body.appendChild(debugEl);
+}
+function updateDebug(){
+  if(!debugEl) return;
+  debugEl.textContent=
+    'Gerät: '+(IS_IIYAMA?'iiyama erkannt':(BIG_ANDROID?'Android-Großdisplay':(IS_ANDROID?'Android':'Desktop/sonstiges')))+
+    '\nViewport: '+W+' × '+H+'  ·  Screen: '+screen.width+' × '+screen.height+'  ·  DPR: '+(window.devicePixelRatio||1)+
+    '\nCanvas: '+canvas.width+' × '+canvas.height+'  ·  Render-Skalierung: '+renderScale.toFixed(2)+'  ·  UI-Skalierung: '+UIS.toFixed(2)+
+    '\nFPS: '+fpsNow.toFixed(0)+'  ·  Touch: '+(IS_TOUCH?'ja':'nein')+'  ·  Canvas-Test: '+blankState+
+    '\nFehler: '+(lastError||'keiner')+
+    '\nUA: '+UA;
+}
+
 let lastT=performance.now();
 function loop(now){
   requestAnimationFrame(loop);
   // Zeitbasiert animieren: gleiche Geschwindigkeit auf 60-, 120- und 144-Hz-Displays
   if(typeof now!=='number') now=performance.now();
-  const dt=Math.max(0, Math.min(3,(now-lastT)/16.667));
+  const rawDt=now-lastT;
+  const dt=Math.max(0, Math.min(3,rawDt/16.667));
   lastT=now;
+
+  // Leistung beobachten: läuft es dauerhaft unter ~24 fps, Zeichenfläche verkleinern
+  if(rawDt>0 && rawDt<500){ perfAcc+=rawDt; perfN++; fpsNow+=((1000/rawDt)-fpsNow)*0.1; }
+  if(perfN>=45){
+    const avg=perfAcc/perfN; perfAcc=0; perfN=0;
+    if(avg>42 && canvas.width*canvas.height>640*360){
+      maxPixels=Math.max(640*360, canvas.width*canvas.height*0.6);
+      resize();
+    }
+  }
   animFrame+=dt;
   if(autoRotate) rotY+=0.0025*dt;
 
@@ -1337,6 +1416,9 @@ function loop(now){
 
   drawGlobe();
   drawNodes();
+
+  if(blankCheckAt>=0 && animFrame>=blankCheckAt){ blankCheckAt=-1; checkCanvasBlank(); }
+  if(DEBUG && (Math.floor(animFrame)%15===0)) updateDebug();
 }
 loop();
 </script>
