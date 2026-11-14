@@ -176,6 +176,14 @@
   .panel-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; gap:10px; }
   .panel-title { font-family:'Orbitron', monospace; font-size:15px; font-weight:700; color: var(--accent); text-shadow: 0 0 10px rgba(0,200,255,0.5); }
   .panel-team { font-family:'Share Tech Mono', monospace; font-size:10px; padding:3px 9px; border-radius:20px; border:1px solid; white-space:nowrap; flex-shrink:0; }
+  .panel-follow {
+    font-family:'Share Tech Mono', monospace; font-size:10px; letter-spacing:1px;
+    padding:3px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; cursor:pointer;
+    color:var(--accent); background:rgba(0,200,255,0.12); border:1px solid var(--accent);
+    box-shadow:0 0 10px rgba(0,200,255,0.35); transition:all 0.2s;
+  }
+  .panel-follow.is-off { color:rgba(0,200,255,0.55); background:transparent; border-style:dashed; box-shadow:none; }
+  .panel-follow:hover { color:#fff; }
   .panel-close { background:none; border:none; color:rgba(0,200,255,0.5); font-size:18px; cursor:pointer; padding:0 0 0 8px; transition: color 0.2s; }
   .panel-close:hover { color: var(--accent2); }
   .panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
@@ -270,6 +278,7 @@
   <div class="panel-header">
     <div><div class="panel-title" id="p-title">—</div></div>
     <div style="display:flex;align-items:center;gap:8px">
+      <button class="panel-follow" id="p-follow" type="button" title="Ansicht folgt dem gewählten Satelliten – Ziehen beendet das Verfolgen">◉ VERFOLGT</button>
       <div class="panel-team" id="p-team">—</div>
       <button class="panel-close" onclick="closePanel()">✕</button>
     </div>
@@ -1176,14 +1185,15 @@ function getOrbit(atk){
 // Weltposition eines Knotens: Satellit auf Umlaufbahn oder (alt) fix auf der Kugel.
 // Beim Umschalten in den / aus dem "Alle"-Modus gleiten die Satelliten weich
 // von ihrer Einzelbahn auf den DA-Ring (und zurück), statt zu springen.
-function worldPos3D(atk){
+function worldPos3D(atk, tt){
+  if(tt===undefined) tt=animFrame; // optional: Position zu einem anderen Zeitpunkt (Vorausschau)
   if(!SATELLITE_MODE) return latLonTo3D(atk.lat, atk.lon);
   if(!atk._o) atk._o = satOrbit(atk.id);
-  if(allBlend<=0.001) return satPos3D(atk._o, animFrame);
+  if(allBlend<=0.001) return satPos3D(atk._o, tt);
   const to=teamOrbit(atk);
-  const b=satPos3D(to, animFrame);
+  const b=satPos3D(to, tt);
   if(allBlend>=0.999) return b;
-  const a=satPos3D(atk._o, animFrame);
+  const a=satPos3D(atk._o, tt);
   const t=allBlend*allBlend*(3-2*allBlend);
   const x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t, z=a.z+(b.z-a.z)*t;
   const len=Math.hypot(x,y,z);
@@ -1412,6 +1422,52 @@ function hitTest(mx,my){
   return best;
 }
 
+// ── Satellit verfolgen ────────────────────────────────────────────────────
+// Nach dem Antippen dreht sich die Ansicht so mit, dass der gewählte Satellit
+// vorne in der Bildmitte bleibt, während er seine Bahn zieht. Ziehen am Globus
+// beendet das Verfolgen; der Knopf in der Detailkarte schaltet es wieder ein.
+let followNode=null;
+function refreshFollowBtn(){
+  const b=document.getElementById('p-follow');
+  if(!b) return;
+  const on=!!followNode;
+  b.classList.toggle('is-off', !on);
+  b.textContent = on ? '◉ VERFOLGT' : '◎ VERFOLGEN';
+  b.setAttribute('aria-pressed', on?'true':'false');
+}
+function setFollow(atk){
+  followNode=atk||null;
+  if(followNode){ stopMomentum(); autoRotate=false; }
+  refreshFollowBtn();
+}
+(function(){
+  const b=document.getElementById('p-follow');
+  if(b) b.addEventListener('click', ()=>{
+    if(followNode) setFollow(null);
+    else { const atk=ATTACKS.find(a=>a.id===selectedNode); if(atk) setFollow(atk); }
+  });
+})();
+// Ansicht schrittweise auf den verfolgten Satelliten ausrichten (pro Frame)
+function followStep(dt){
+  if(!followNode || dragging) return;
+  // Vorausschau um 1/k Frames: gleicht den Nachlauf der weichen Nachführung aus,
+  // sodass der Satellit nicht dauerhaft leicht neben der Mitte hängt
+  const k=Math.min(1,0.08*dt);
+  const w=worldPos3D(followNode, animFrame + (k>0 ? dt/k : 0));
+  const r=Math.hypot(w.x,w.z);
+  if(r<1e-4) return;
+  // Y-Drehung: Satellit auf die Mittelachse bringen (x' = 0, z' > 0)
+  const tY=Math.atan2(-w.x, w.z);
+  // X-Neigung: Satellit etwas über die Bildmitte legen (Detailkarte unten bleibt frei)
+  const A=Math.hypot(w.y,r);
+  const yOff=Math.min(A*0.95, W<720 ? 0.45 : 0.12);
+  const phi=Math.atan2(r,w.y);
+  let tX=Math.acos(Math.max(-1,Math.min(1,yOff/A))) - phi;
+  tX=Math.max(-1.4,Math.min(1.4,tX));
+  let dY=tY-rotY; dY=Math.atan2(Math.sin(dY),Math.cos(dY)); // kürzester Weg
+  rotY+=dY*k; rotX+=(tX-rotX)*k;
+}
+
 function openPanel(atk){
   const col=TEAMS[atk.team].color;
   document.getElementById('p-title').textContent=atk.name;
@@ -1426,9 +1482,10 @@ function openPanel(atk){
   ['pf-layer','pf-cat','pf-sev','pf-proto'].forEach(id=>{ document.getElementById(id).style.borderLeftColor=col; });
   document.getElementById('detail-panel').classList.add('visible');
   selectedNode=atk.id;
+  setFollow(atk);
   autoRotate=false;
 }
-function closePanel(){ document.getElementById('detail-panel').classList.remove('visible'); hoveredNode=null; selectedNode=null; autoRotate=true; }
+function closePanel(){ document.getElementById('detail-panel').classList.remove('visible'); hoveredNode=null; selectedNode=null; followNode=null; refreshFollowBtn(); autoRotate=true; }
 
 // Hover laufend neu bestimmen – die Satelliten bewegen sich auch bei ruhender Maus
 function updateHover(){
@@ -1443,7 +1500,7 @@ canvas.addEventListener('mousemove',e=>{
   mouseX=e.clientX; mouseY=e.clientY; mouseInside=true;
   if(dragging){
     const dx=e.clientX-lastMX, dy=e.clientY-lastMY;
-    if(Math.hypot(dx,dy)>2) dragMoved=true;
+    if(Math.hypot(dx,dy)>2){ dragMoved=true; if(followNode) setFollow(null); }
     rotY+=dx*0.008; rotX+=dy*0.008;
     rotX=Math.max(-1.4,Math.min(1.4,rotX));
     lastMX=e.clientX; lastMY=e.clientY;
@@ -1496,6 +1553,7 @@ canvas.addEventListener('touchmove',e=>{
   // kleines Zittern des Fingers zählt noch als Tippen, nicht als Ziehen
   if(!dragMoved && Math.hypot(t.clientX-touchStartX,t.clientY-touchStartY)<8) return;
   dragMoved=true;
+  if(followNode) setFollow(null);
   rotY+=(t.clientX-lastMX)*0.01; rotX+=(t.clientY-lastMY)*0.01;
   rotX=Math.max(-1.4,Math.min(1.4,rotX));
   lastMX=t.clientX; lastMY=t.clientY;
@@ -1616,7 +1674,6 @@ function loop(now){
 
   // Tatsächliche Drehgeschwindigkeit messen (Wischen, Schwung oder Eigendrehung)
   const inst=dt>0 ? Math.abs(rotY-prevRotY)/dt : 0;
-  prevRotY=rotY;
   angSpeed+=(Math.min(inst,0.5)-angSpeed)*Math.min(1,0.25*dt);
   // Schleuder-Stärke: schnell nach außen, gemächlich zurück
   const want=Math.max(0, Math.min(1, (angSpeed-FLING_MIN)/(FLING_FULL-FLING_MIN)));
@@ -1625,6 +1682,9 @@ function loop(now){
   if(flingAmt<0.001) flingAmt=0;
   const ease=flingAmt*flingAmt*(3-2*flingAmt);
   orbitScale=1+FLING_MAX_OUT*ease;
+
+  followStep(dt);
+  prevRotY=rotY; // nach dem Verfolgen: dessen Drehung zählt nicht als Schwung
 
   // weiche Überblendung Einzelbahnen <-> DA-Ringe
   const target=showAll?1:0;
